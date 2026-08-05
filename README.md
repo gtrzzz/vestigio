@@ -1,14 +1,14 @@
-# VESTIGIO — Fase 4: enigmas funcionales
+# VESTIGIO ARG COMPLEJO
 
-Incluye los cuatro enigmas completos, navegación cinematográfica, Cuaderno de la Deriva, carta final, pistas por código, guardado local y modo organizador.
+Versión ampliada con enigmas encadenados, referencias cinematográficas y una duración objetivo superior.
 
-## Publicar en GitHub Pages desde iPhone/iPad
+## Publicación desde iPhone o iPad
 
-1. Descomprime el ZIP en Archivos.
-2. Sube **los archivos interiores** al repositorio `vestigio`.
-3. En GitHub: `Settings → Pages`.
+1. Descomprime el ZIP en la app Archivos.
+2. Sube **el contenido interior** al repositorio `vestigio`.
+3. En GitHub abre `Settings → Pages`.
 4. Selecciona `Deploy from a branch`, rama `main`, carpeta `/(root)`.
-5. La dirección será `https://gtrzzz.github.io/vestigio/`.
+5. Abre `https://gtrzzz.github.io/vestigio/`.
 
 ## Claves de recuperación
 
@@ -26,10 +26,15 @@ Incluye los cuatro enigmas completos, navegación cinematográfica, Cuaderno de 
 
 ## Organizador
 
-- Mantén pulsado el símbolo 4 segundos o tócalo 5 veces.
+- Mantén pulsado el símbolo durante 4 segundos o tócalo 5 veces.
 - Contraseña: `280625`.
-- Acceso alternativo: `?organizer=true`.
+- También puedes abrir `?organizer=true`.
 
-## Nota
+## Duración prevista
 
-La protección del modo organizador es narrativa, no seguridad real. La web es estática.
+- Nivel 1: 15–25 minutos
+- Nivel 2: 20–35 minutos
+- Nivel 3: 15–30 minutos
+- Nivel 4: 15–25 minutos
+
+La duración real depende de si utiliza pistas o ayuda de una IA.

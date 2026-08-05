@@ -1,127 +1,168 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#09090b">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>VESTIGIO</title>
-<link rel="stylesheet" href="./css/main.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08090b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>VESTIGIO</title>
+  <link rel="stylesheet" href="./css/main.css">
 </head>
 <body>
-<canvas id="ambient"></canvas>
+  <canvas id="ambient" aria-hidden="true"></canvas>
 
-<header id="topbar" class="topbar hidden">
-  <button id="brand" class="brand" aria-label="Símbolo de Vestigio"><span class="rings"><i></i><i></i><i></i><b></b></span></button>
-  <div><small>ORIGEN CONFIRMADO</small><strong>VESTIGIO</strong></div>
-  <button id="sound" class="sound" aria-label="Sonido">◌</button>
-</header>
-
-<main id="app">
-  <section id="boot" class="scene active center">
-    <div class="boot-box">
-      <div class="dots"><i></i><i></i><i></i></div>
-      <p id="bootText">Inicializando sesión…</p>
-      <div id="identity"></div>
-      <button id="bootContinue" class="primary concealed">Continuar</button>
+  <header id="topbar" class="topbar hidden">
+    <button id="brand" class="brand-button" aria-label="Abrir acceso restringido">
+      <span class="brand-mark"><i></i><i></i><i></i><b></b></span>
+    </button>
+    <div class="brand-copy">
+      <small>ORIGEN CONFIRMADO</small>
+      <strong>VESTIGIO</strong>
     </div>
-  </section>
+    <button id="soundToggle" class="sound-button" aria-label="Activar o desactivar sonido">◌</button>
+  </header>
 
-  <section id="intro" class="scene">
-    <div class="intro-grid frame">
-      <div class="big-symbol"><i></i><i></i><i></i><i></i><b></b></div>
-      <div>
-        <small>MENSAJE VERIFICADO // RUMBO ALTERADO</small>
-        <h1>No estás aquí por accidente.</h1>
-        <p>Cuatro vestigios han cambiado de rumbo. El primero está cerca. Los demás todavía no saben que los estás buscando.</p>
-        <em>Lo que se pierde no desaparece. Cambia de rumbo.</em>
-        <button id="start" class="primary">Iniciar recuperación</button>
+  <main id="app" tabindex="-1">
+    <section id="bootScene" class="scene active boot-scene">
+      <div class="boot-box">
+        <div class="boot-dots"><span></span><span></span><span></span></div>
+        <p id="bootStatus">Inicializando sesión…</p>
+        <div id="bootIdentity"></div>
+        <button id="bootContinue" class="primary concealed">Continuar</button>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section id="hub" class="scene">
-    <div class="frame">
-      <div class="heading">
-        <div><small>REGISTRO DE SESIÓN</small><h2>Ruta activa</h2><p id="returnText"></p></div>
-        <button id="openBook" class="book-mini"><span>CUADERNO</span><strong id="count">0 / 4</strong></button>
+    <section id="introScene" class="scene">
+      <div class="frame intro-grid">
+        <div class="large-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
+        <div class="intro-copy">
+          <small>MENSAJE VERIFICADO // RUMBO ALTERADO</small>
+          <h1>No estás aquí por accidente.</h1>
+          <p>Cuatro vestigios han cambiado de rumbo. Cada uno conserva algo que todavía no sabes que estás buscando.</p>
+          <em>Lo que se pierde no desaparece. Cambia de rumbo.</em>
+          <button id="startButton" class="primary">Iniciar recuperación</button>
+        </div>
       </div>
-      <div class="progress"><span id="progress"></span></div>
-      <div id="records" class="records"></div>
-    </div>
-  </section>
+    </section>
 
-  <section id="level" class="scene">
-    <div class="frame">
-      <button id="back" class="back">← Volver a la ruta</button>
-      <article class="case">
-        <div class="case-head"><div><small id="levelCode"></small><h2 id="levelTitle"></h2></div><span>VERIFICADO</span></div>
-        <p id="levelIntro" class="narrative"></p>
-        <div id="puzzle" class="puzzle"></div>
-        <form id="answerForm">
-          <label for="answer">Clave de recuperación</label>
-          <div class="answer-row"><input id="answer" autocomplete="off" autocapitalize="characters"><button class="primary">Verificar</button></div>
-          <p id="feedback"></p>
-        </form>
-        <details>
-          <summary>Introducir código de pista</summary>
-          <div class="answer-row"><input id="hintCode" autocomplete="off"><button id="unlockHint" type="button" class="secondary">Desbloquear</button></div>
-          <div id="hintText" class="hint"></div>
-        </details>
+    <section id="hubScene" class="scene">
+      <div class="frame">
+        <div class="hub-header">
+          <div>
+            <small>REGISTRO DE SESIÓN</small>
+            <h2>Ruta activa</h2>
+            <p id="returnMessage" class="muted"></p>
+          </div>
+          <button id="openBook" class="book-button">
+            <span>CUADERNO</span>
+            <strong id="fragmentCount">0 / 4</strong>
+          </button>
+        </div>
+        <div class="progress-line"><span id="progressBar"></span></div>
+        <div id="recordList" class="record-list"></div>
+      </div>
+    </section>
+
+    <section id="levelScene" class="scene">
+      <div class="frame">
+        <button id="backHub" class="back-button">← Volver a los registros</button>
+        <article class="case-file">
+          <div class="case-header">
+            <div>
+              <small id="levelCode"></small>
+              <h2 id="levelTitle"></h2>
+              <p id="levelSubtitle" class="muted"></p>
+            </div>
+            <span class="verified-badge">VERIFICADO</span>
+          </div>
+
+          <div id="puzzleArea" class="puzzle-area"></div>
+
+          <form id="answerForm" class="answer-form">
+            <label for="answerInput">Clave de recuperación</label>
+            <div class="answer-row">
+              <input id="answerInput" autocomplete="off" autocapitalize="characters" spellcheck="false">
+              <button class="primary">Verificar</button>
+            </div>
+            <p id="answerFeedback" class="feedback" role="status"></p>
+          </form>
+
+          <details class="hint-panel">
+            <summary>Introducir código de pista</summary>
+            <div class="answer-row">
+              <input id="hintInput" autocomplete="off" autocapitalize="characters">
+              <button id="hintButton" type="button" class="secondary">Desbloquear</button>
+            </div>
+            <div id="hintOutput" class="hint-output"></div>
+          </details>
+        </article>
+      </div>
+    </section>
+
+    <section id="revealScene" class="scene reveal-scene">
+      <div class="reveal-wrap">
+        <div id="revealVisual" class="reveal-visual"></div>
+        <small>FRAGMENTO RECUPERADO</small>
+        <h2 id="revealTitle"></h2>
+        <p id="revealText"></p>
+        <button id="continueButton" class="primary">Continuar</button>
+      </div>
+    </section>
+
+    <section id="bookScene" class="scene">
+      <div class="frame">
+        <button id="closeBook" class="back-button">← Cerrar cuaderno</button>
+        <div class="book-cover">
+          <small>ARCHIVO CENTRAL</small>
+          <h2>El Cuaderno de la Deriva</h2>
+          <p>Cada página es un vestigio. Todas forman la historia.</p>
+        </div>
+        <div id="bookPages" class="book-pages"></div>
+      </div>
+    </section>
+
+    <section id="letterScene" class="scene letter-scene">
+      <article class="letter">
+        <small>RUTA ABIERTA</small>
+        <h2>Ania,</h2>
+        <p>No había cuatro cosas perdidas.</p>
+        <p>Solo cuatro formas de llevarte hasta un recuerdo que todavía no existe.</p>
+        <p>Nos iremos a algún lugar de Europa. Elegiremos juntos la fecha, el sitio y la forma de vivirlo: una carretera, la nieve, la montaña, quads, karts o una escapada rural.</p>
+        <p>El destino no estaba escrito porque esta vez no quería decidirlo sin ti.</p>
+        <p class="signature">Iván</p>
+        <button id="closeLetter" class="secondary">Volver al cuaderno</button>
       </article>
+    </section>
+  </main>
+
+  <footer id="footer" class="footer hidden">
+    <span id="sessionLabel"></span>
+    <span id="storageLabel">ALMACENAMIENTO: LOCAL ACTIVO</span>
+  </footer>
+
+  <dialog id="organizerDialog">
+    <form method="dialog" class="dialog-header">
+      <div><small>ACCESO RESTRINGIDO</small><h2>Modo Organizador</h2></div>
+      <button value="cancel" aria-label="Cerrar">×</button>
+    </form>
+    <div id="organizerLogin">
+      <label for="organizerPassword">Contraseña</label>
+      <div class="answer-row">
+        <input id="organizerPassword" type="password" inputmode="numeric">
+        <button id="organizerEnter" class="primary">Entrar</button>
+      </div>
+      <p id="organizerFeedback"></p>
     </div>
-  </section>
-
-  <section id="reveal" class="scene center">
-    <div class="reveal-wrap">
-      <div id="revealVisual" class="reveal-visual"></div>
-      <small>FRAGMENTO RECUPERADO</small>
-      <h2 id="revealTitle"></h2>
-      <p id="revealText"></p>
-      <button id="continue" class="primary">Continuar</button>
+    <div id="organizerPanel" hidden>
+      <pre id="organizerState"></pre>
+      <div id="organizerControls"></div>
+      <button id="simulateAll" class="secondary">Simular resolución completa</button>
+      <button id="resetProgress" class="danger">Reiniciar progreso</button>
     </div>
-  </section>
+  </dialog>
 
-  <section id="book" class="scene">
-    <div class="frame">
-      <button id="closeBook" class="back">← Cerrar cuaderno</button>
-      <div class="book-cover"><small>ARCHIVO CENTRAL</small><h2>El Cuaderno de la Deriva</h2><p>Registro incompleto</p></div>
-      <div id="pages" class="pages"></div>
-    </div>
-  </section>
-
-  <section id="letter" class="scene letter-scene">
-    <article class="letter">
-      <small>RUTA ABIERTA</small>
-      <h2>Ania,</h2>
-      <p>No había cuatro cosas perdidas.</p>
-      <p>Solo cuatro formas de llevarte hasta un recuerdo que todavía no existe.</p>
-      <p>Nos iremos a algún lugar de Europa. Elegiremos juntos la fecha, el sitio y la forma de vivirlo: montaña, nieve, carretera, quads, karts o una escapada rural.</p>
-      <p>El destino aún no está escrito porque esta vez no quería decidirlo sin ti.</p>
-      <p class="signature">Iván</p>
-      <button id="closeLetter" class="secondary">Volver al cuaderno</button>
-    </article>
-  </section>
-</main>
-
-<footer id="footer" class="footer hidden"><span id="session"></span><span id="storage"></span></footer>
-
-<dialog id="organizer">
-  <form method="dialog" class="dialog-head"><div><small>ACCESO RESTRINGIDO</small><h2>Modo Organizador</h2></div><button value="cancel">×</button></form>
-  <div id="orgLogin">
-    <label for="orgPass">Contraseña</label>
-    <div class="answer-row"><input id="orgPass" type="password" inputmode="numeric"><button id="orgEnter" class="primary">Entrar</button></div>
-    <p id="orgFeedback"></p>
-  </div>
-  <div id="orgPanel" hidden>
-    <pre id="orgState"></pre>
-    <div id="orgControls"></div>
-    <button id="simulate" class="secondary">Simular resolución completa</button>
-    <button id="reset" class="danger">Reiniciar progreso</button>
-  </div>
-</dialog>
-
-<script src="./config/config.js"></script>
-<script src="./js/app.js"></script>
+  <script src="./config/config.js"></script>
+  <script src="./js/app.js"></script>
 </body>
 </html>
