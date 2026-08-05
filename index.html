@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0e">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Experiencia interactiva VESTIGIO">
+  <title>VESTIGIO</title>
+  <link rel="stylesheet" href="./css/main.css">
+  <link rel="stylesheet" href="./css/animations.css">
+</head>
+<body>
+  <noscript>
+    <div class="noscript">
+      Esta experiencia necesita JavaScript para guardar el progreso y mostrar los fragmentos.
+    </div>
+  </noscript>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <button id="brandTrigger" class="brand-button" type="button" aria-label="Símbolo de Vestigio">
+        <span class="brand-mark" aria-hidden="true">
+          <span class="brand-ring ring-a"></span>
+          <span class="brand-ring ring-b"></span>
+          <span class="brand-ring ring-c"></span>
+          <span class="brand-needle"></span>
+        </span>
+      </button>
+
+      <div class="topbar-copy">
+        <span class="eyebrow">ORIGEN CONFIRMADO</span>
+        <strong id="entityName">VESTIGIO</strong>
+      </div>
+
+      <button id="soundToggle" class="icon-button" type="button" aria-pressed="false" aria-label="Activar o desactivar sonido">
+        <span aria-hidden="true">◌</span>
+      </button>
+    </header>
+
+    <main id="app" class="main-content" tabindex="-1">
+      <section id="introView" class="view is-active" aria-labelledby="introTitle">
+        <div class="hero">
+          <p class="system-line">MENSAJE VERIFICADO // RUMBO ALTERADO</p>
+          <h1 id="introTitle">No estás aquí por accidente.</h1>
+          <p id="introText" class="hero-text">
+            Cuatro vestigios han cambiado de rumbo. El primero está cerca.
+            Los demás todavía no saben que los estás buscando.
+          </p>
+          <p class="recurrent-phrase">Lo que se pierde no desaparece. Cambia de rumbo.</p>
+          <button id="startButton" class="primary-button" type="button">Iniciar recuperación</button>
+        </div>
+      </section>
+
+      <section id="hubView" class="view" aria-labelledby="hubTitle">
+        <div class="section-heading">
+          <p class="eyebrow">REGISTRO DE SESIÓN</p>
+          <h2 id="hubTitle">Ruta activa</h2>
+          <p id="welcomeBackMessage" class="muted"></p>
+        </div>
+
+        <div class="progress-card">
+          <div>
+            <span class="eyebrow">FRAGMENTOS</span>
+            <strong id="progressLabel">0 / 4</strong>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <span id="progressBar"></span>
+          </div>
+        </div>
+
+        <div id="levelList" class="level-list" aria-label="Niveles de la experiencia"></div>
+
+        <div class="hub-actions">
+          <a class="secondary-button" href="./pages/archive.html">Abrir Cuaderno de la Deriva</a>
+          <button id="exportProgressButton" class="text-button" type="button">Exportar progreso</button>
+        </div>
+      </section>
+
+      <section id="levelView" class="view" aria-labelledby="levelTitle">
+        <button id="backToHubButton" class="back-button" type="button">← Volver a la ruta</button>
+        <article class="level-panel">
+          <p id="levelKicker" class="eyebrow"></p>
+          <h2 id="levelTitle"></h2>
+          <p id="levelNarrative" class="level-narrative"></p>
+
+          <div id="levelPrototype" class="prototype-box">
+            <p>Este prototipo estructural valida navegación, respuestas, guardado y revelaciones.</p>
+          </div>
+
+          <form id="answerForm" class="answer-form" novalidate>
+            <label for="answerInput">Clave de recuperación</label>
+            <div class="answer-row">
+              <input id="answerInput" name="answer" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Introduce una respuesta">
+              <button class="primary-button" type="submit">Verificar</button>
+            </div>
+            <p id="answerFeedback" class="feedback" role="status" aria-live="polite"></p>
+          </form>
+
+          <div class="hint-entry">
+            <label for="hintCodeInput">Código de pista</label>
+            <div class="answer-row">
+              <input id="hintCodeInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Código opcional">
+              <button id="hintCodeButton" class="secondary-button" type="button">Desbloquear</button>
+            </div>
+            <div id="hintOutput" class="hint-output" aria-live="polite"></div>
+          </div>
+        </article>
+      </section>
+
+      <section id="revealView" class="view" aria-labelledby="revealTitle">
+        <div class="reveal-card">
+          <p class="system-line">FRAGMENTO RECUPERADO</p>
+          <div id="revealVisual" class="reveal-visual" aria-hidden="true"></div>
+          <h2 id="revealTitle"></h2>
+          <p id="revealMessage"></p>
+          <button id="continueButton" class="primary-button" type="button">Continuar</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-status">
+      <span id="sessionId">SESIÓN: —</span>
+      <span id="storageStatus">ALMACENAMIENTO: —</span>
+    </footer>
+  </div>
+
+  <dialog id="organizerDialog" class="organizer-dialog">
+    <form method="dialog" class="dialog-header">
+      <div>
+        <p class="eyebrow">ACCESO RESTRINGIDO</p>
+        <h2>Modo Organizador</h2>
+      </div>
+      <button class="icon-button" value="cancel" aria-label="Cerrar">×</button>
+    </form>
+
+    <div id="organizerLogin">
+      <label for="organizerPassword">Contraseña</label>
+      <div class="answer-row">
+        <input id="organizerPassword" type="password" inputmode="numeric" autocomplete="off">
+        <button id="organizerLoginButton" class="primary-button" type="button">Entrar</button>
+      </div>
+      <p id="organizerLoginFeedback" class="feedback" role="status"></p>
+    </div>
+
+    <div id="organizerPanel" hidden>
+      <div class="organizer-grid">
+        <section>
+          <h3>Estado</h3>
+          <pre id="organizerState" class="state-preview"></pre>
+        </section>
+        <section>
+          <h3>Controles</h3>
+          <div id="organizerLevelControls" class="organizer-controls"></div>
+          <button id="simulateAllButton" class="secondary-button" type="button">Simular resolución completa</button>
+          <button id="resetProgressButton" class="danger-button" type="button">Reiniciar progreso</button>
+        </section>
+        <section>
+          <h3>Importar progreso</h3>
+          <textarea id="importProgressInput" rows="7" placeholder='Pega aquí el JSON exportado'></textarea>
+          <button id="importProgressButton" class="secondary-button" type="button">Importar JSON</button>
+        </section>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="./config/experience-config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/storage.js"></script>
+  <script src="./js/puzzles.js"></script>
+  <script src="./js/organizer.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>

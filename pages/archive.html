@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0e">
+  <title>Cuaderno de la Deriva</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <main class="main-content">
+    <a class="back-button" href="../index.html">← Volver a la ruta</a>
+    <section class="level-panel">
+      <p class="eyebrow">ARCHIVO CENTRAL</p>
+      <h1 style="font-family:Georgia,serif;font-weight:500;font-size:clamp(38px,9vw,64px);margin:14px 0;">El Cuaderno de la Deriva</h1>
+      <p class="level-narrative">Cada recuperación deja una página. Algunas palabras solo adquirirán sentido cuando exista una ruta completa.</p>
+      <div id="archivePages" class="level-list"></div>
+    </section>
+  </main>
+
+  <script src="../config/experience-config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/storage.js"></script>
+  <script>
+    const state = VestigioStorage.load();
+    const container = document.getElementById("archivePages");
+
+    EXPERIENCE_CONFIG.levels.forEach(level => {
+      const unlocked = state.completedLevels.includes(level.id);
+      const article = document.createElement("article");
+      article.className = `level-card${unlocked ? " is-complete" : ""}`;
+      article.innerHTML = unlocked
+        ? `
+          <div class="level-card-top">
+            <span class="eyebrow">PÁGINA 0${level.number}</span>
+            <span class="level-status">RECUPERADA</span>
+          </div>
+          <h3>${level.title}</h3>
+          <p>Fragmento conservado: <strong>${level.finalFragment}</strong></p>
+        `
+        : `
+          <div class="level-card-top">
+            <span class="eyebrow">PÁGINA 0${level.number}</span>
+            <span class="level-status">BLOQUEADA</span>
+          </div>
+          <h3>Contenido no recuperado</h3>
+          <p>La página permanece fuera de rumbo.</p>
+        `;
+      container.append(article);
+    });
+  </script>
+</body>
+</html>
