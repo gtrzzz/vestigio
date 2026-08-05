@@ -1,208 +1,38 @@
 (() => {
-  const config = window.EXPERIENCE_CONFIG;
-  let state = VestigioStorage.load();
-  let activeLevelId = null;
-
-  const views = {
-    intro: document.getElementById("introView"),
-    hub: document.getElementById("hubView"),
-    level: document.getElementById("levelView"),
-    reveal: document.getElementById("revealView")
-  };
-
-  const setState = (next) => {
-    state = next;
-    VestigioStorage.save(state);
-  };
-
-  const showView = (name) => {
-    Object.values(views).forEach(view => view.classList.remove("is-active"));
-    views[name].classList.add("is-active");
-    document.getElementById("app").focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const isLevelUnlocked = (level) => {
-    if (level.number === 1) return state.started;
-    const previous = config.levels.find(item => item.number === level.number - 1);
-    return state.completedLevels.includes(previous.id);
-  };
-
-  const renderStatus = () => {
-    document.getElementById("sessionId").textContent = `SESIÓN: ${state.sessionId}`;
-    document.getElementById("storageStatus").textContent =
-      `ALMACENAMIENTO: ${VestigioStorage.isAvailable() ? "LOCAL ACTIVO" : "NO DISPONIBLE"}`;
-  };
-
-  const renderHub = () => {
-    const completed = state.completedLevels.length;
-    document.getElementById("progressLabel").textContent = `${completed} / ${config.levels.length}`;
-    document.getElementById("progressBar").style.width = `${(completed / config.levels.length) * 100}%`;
-
-    const firstOpened = new Date(state.firstOpenedAt);
-    const days = Math.max(0, Math.floor((Date.now() - firstOpened.getTime()) / 86400000));
-    document.getElementById("welcomeBackMessage").textContent =
-      days > 0
-        ? `Han pasado ${days} días desde la primera señal. El rumbo continúa intacto.`
-        : `La sesión de ${config.meta.playerName} está activa.`;
-
-    const list = document.getElementById("levelList");
-    list.innerHTML = "";
-
-    config.levels.forEach(level => {
-      const complete = state.completedLevels.includes(level.id);
-      const unlocked = isLevelUnlocked(level);
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = `level-card${complete ? " is-complete" : ""}`;
-      button.disabled = !unlocked;
-      button.innerHTML = `
-        <div class="level-card-top">
-          <span class="eyebrow">REGISTRO 0${level.number}</span>
-          <span class="level-status">${complete ? "RECUPERADO" : unlocked ? "DISPONIBLE" : "BLOQUEADO"}</span>
-        </div>
-        <h3>${level.title}</h3>
-        <p>${level.subtitle}</p>
-      `;
-      button.addEventListener("click", () => openLevel(level.id));
-      list.append(button);
-    });
-  };
-
-  const openLevel = (levelId) => {
-    const level = VestigioPuzzles.getLevel(levelId);
-    if (!level || !isLevelUnlocked(level)) return;
-    activeLevelId = levelId;
-
-    document.getElementById("levelKicker").textContent = `REGISTRO 0${level.number}`;
-    document.getElementById("levelTitle").textContent = level.title;
-    document.getElementById("levelNarrative").textContent = level.narrative;
-    document.getElementById("answerInput").value = state.answers[levelId] || "";
-    document.getElementById("answerFeedback").textContent = "";
-    document.getElementById("hintCodeInput").value = "";
-    document.getElementById("hintOutput").textContent = "";
-
-    const prototype = document.getElementById("levelPrototype");
-    if (level.id === "form") {
-      prototype.innerHTML = `
-        <p><strong>Prototipo del Nivel 3.</strong></p>
-        <img src="./assets/images/kiwi-reference.jpeg" alt="Kiwi con una pelota de tenis" style="width:100%;max-height:360px;object-fit:cover;border-radius:14px;">
-        <p>En la Fase 4 esta referencia se convertirá en una reconstrucción interactiva por capas.</p>
-      `;
-    } else if (level.id === "destination") {
-      prototype.innerHTML = `
-        <p><strong>RUTA NO ASIGNADA.</strong></p>
-        <p>Región: Europa<br>Fecha: por decidir<br>Destino: por construir juntos</p>
-      `;
-    } else {
-      prototype.innerHTML = `<p>La mecánica visual definitiva se implementará en la Fase 4. En esta fase se prueba el flujo completo.</p>`;
-    }
-
-    showView("level");
-  };
-
-  const completeActiveLevel = (answer) => {
-    if (!activeLevelId) return;
-    const level = VestigioPuzzles.getLevel(activeLevelId);
-    const next = structuredClone(state);
-    next.answers[activeLevelId] = answer;
-    next.completedLevels = [...new Set([...next.completedLevels, activeLevelId])];
-    if (level.number === 4) next.finalRevealAt = new Date().toISOString();
-    setState(next);
-
-    document.getElementById("revealTitle").textContent = level.revealTitle;
-    document.getElementById("revealMessage").textContent = level.revealMessage;
-    document.getElementById("revealVisual").dataset.level = level.number;
-    showView("reveal");
-  };
-
-  const refresh = () => {
-    renderStatus();
-    renderHub();
-    if (!state.started) showView("intro");
-    else if (!document.querySelector(".view.is-active")) showView("hub");
-  };
-
-  document.getElementById("startButton").addEventListener("click", () => {
-    const next = structuredClone(state);
-    next.started = true;
-    setState(next);
-    renderHub();
-    showView("hub");
-  });
-
-  document.getElementById("backToHubButton").addEventListener("click", () => {
-    renderHub();
-    showView("hub");
-  });
-
-  document.getElementById("continueButton").addEventListener("click", () => {
-    renderHub();
-    showView("hub");
-  });
-
-  document.getElementById("answerForm").addEventListener("submit", event => {
-    event.preventDefault();
-    if (!activeLevelId) return;
-    const input = document.getElementById("answerInput");
-    const feedback = document.getElementById("answerFeedback");
-    const answer = input.value;
-
-    const next = structuredClone(state);
-    next.attempts[activeLevelId] = (next.attempts[activeLevelId] || 0) + 1;
-    next.answers[activeLevelId] = answer;
-    setState(next);
-
-    if (VestigioPuzzles.validateAnswer(activeLevelId, answer)) {
-      feedback.textContent = "La señal coincide.";
-      feedback.className = "feedback is-success";
-      setTimeout(() => completeActiveLevel(answer), 350);
-    } else {
-      feedback.textContent = "La señal no coincide todavía. Revisa el rumbo.";
-      feedback.className = "feedback is-error";
-    }
-  });
-
-  document.getElementById("hintCodeButton").addEventListener("click", () => {
-    const rawCode = document.getElementById("hintCodeInput").value;
-    const output = document.getElementById("hintOutput");
-    const hint = VestigioPuzzles.getHintByCode(activeLevelId, rawCode);
-
-    if (!hint) {
-      output.textContent = "Código no reconocido.";
-      return;
-    }
-
-    const next = structuredClone(state);
-    next.unlockedHints[activeLevelId] = [...new Set([...(next.unlockedHints[activeLevelId] || []), hint.code])];
-    setState(next);
-    output.textContent = hint.text;
-  });
-
-  document.getElementById("exportProgressButton").addEventListener("click", () => {
-    VestigioUtils.downloadJson(state, config.storage.backupFileName);
-  });
-
-  document.getElementById("soundToggle").addEventListener("click", event => {
-    const next = structuredClone(state);
-    next.soundEnabled = !next.soundEnabled;
-    setState(next);
-    event.currentTarget.setAttribute("aria-pressed", String(next.soundEnabled));
-    event.currentTarget.innerHTML = next.soundEnabled ? "<span aria-hidden='true'>●</span>" : "<span aria-hidden='true'>◌</span>";
-  });
-
-  VestigioOrganizer.init({
-    getState: () => state,
-    setState,
-    refresh
-  });
-
-  document.getElementById("entityName").textContent = config.meta.entityName;
-  document.getElementById("introTitle").textContent = config.intro.title;
-  document.getElementById("introText").textContent = config.intro.body;
-  document.getElementById("soundToggle").setAttribute("aria-pressed", String(state.soundEnabled));
-
-  renderStatus();
-  renderHub();
-  showView(state.started ? "hub" : "intro");
+const C=window.VESTIGIO_CONFIG;
+const dec=s=>{try{return decodeURIComponent(Array.from(atob(s)).map(c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0')).join(''))}catch{return atob(s)}};
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim().replace(/[^A-Z0-9]+/g,' ').replace(/\s+/g,' ');
+const fresh=()=>({session:'VST-'+Date.now().toString(36).toUpperCase(),first:new Date().toISOString(),started:false,completed:[],answers:{},attempts:{},hints:{},sound:false});
+let state;try{state=JSON.parse(localStorage.getItem(C.meta.storageKey))||fresh()}catch{state=fresh()}
+let active=null,current=null,holdTimer,taps=0,tapTimer;
+const save=()=>{try{localStorage.setItem(C.meta.storageKey,JSON.stringify(state))}catch{} renderStatus()};
+const scenes={boot,intro,hub,level,reveal,book,letter};
+function show(name,chrome=true){Object.values(scenes).forEach(s=>s.classList.remove('active'));scenes[name].classList.add('active');current=name;topbar.classList.toggle('hidden',!chrome);footer.classList.toggle('hidden',!chrome);scrollTo(0,0)}
+async function bootRun(){for(const [t,d] of [['Inicializando sesión…',700],['Buscando registros…',800],['Verificando origen…',800],['Sincronizando memoria…',900]]){bootText.textContent=t;await new Promise(r=>setTimeout(r,d))}bootText.textContent='Coincidencias encontradas: 1';await new Promise(r=>setTimeout(r,650));identity.innerHTML='<span>Identidad vinculada</span><strong>'+C.meta.player+'</strong>';await new Promise(r=>setTimeout(r,800));bootText.textContent='Acceso concedido.';bootContinue.classList.remove('concealed')}
+function unlocked(l){if(l.number===1)return state.started;return state.completed.includes(C.levels[l.number-2].id)}
+function renderStatus(){session.textContent='SESIÓN: '+state.session;storage.textContent='ALMACENAMIENTO: LOCAL ACTIVO'}
+function renderHub(){count.textContent=state.completed.length+' / 4';progress.style.width=(state.completed.length*25)+'%';let days=Math.floor((Date.now()-new Date(state.first).getTime())/86400000);returnText.textContent=days>0?'Han pasado '+days+' días desde la primera señal. El rumbo continúa intacto.':'La sesión de '+C.meta.player+' está activa.';records.innerHTML='';C.levels.forEach(l=>{let done=state.completed.includes(l.id),u=unlocked(l),b=document.createElement('button');b.className='record'+(done?' complete':'');b.disabled=!u;b.innerHTML='<div class="record-top"><small>REGISTRO 0'+l.number+'</small><span class="record-status">'+(done?'RECUPERADO':u?'DISPONIBLE':'BLOQUEADO')+'</span></div><h3>'+l.title+'</h3><p>'+l.subtitle+'</p>';b.onclick=()=>openLevel(l.id);records.append(b)})}
+function puzzleHTML(id){
+if(id==='orientation')return `<p class="caesar">URVD QR HV HO ILQDO</p><div class="compass" aria-label="Brújula desviada"></div><p>Una dirección incorrecta puede ser la dirección exacta.</p><button type="button" class="secondary" id="copyCipher">Copiar mensaje</button>`;
+if(id==='essence')return `<div class="poem"><b>S</b>olo algunas cosas permanecen cuando nadie mira.<br><b>O</b>tras se quedan suspendidas en el aire.<br><b>L</b>as más difíciles de guardar no tienen forma.<br><b>O</b>cupan un recuerdo antes que un lugar.<br><br><b>Y</b> cada persona deja una distinta.<br><b>O</b> quizá solo una sea realmente suya.</div><div class="notes"><div class="note">Fruta<br><small>SALIDA</small></div><div class="note">Pétalos<br><small>CORAZÓN</small></div><div class="note">Vainilla<br><small>FONDO</small></div></div>`;
+if(id==='form')return `<p>Ordena las capas de abajo hacia arriba. Usa ↑ y ↓.</p><div id="layers" class="layers"></div><p id="layerResult"></p>`;
+return `<p>Los objetos anteriores eran coordenadas de una segunda lectura.</p><div class="fragments"><span class="fragment">15</span><span class="fragment">YO</span><span class="fragment">CAPA</span></div><div class="map-grid"><div class="map-cell">NORTE</div><div class="map-cell">RUTA</div><div class="map-cell">MEMORIA</div><div class="map-cell">EUROPA</div><div class="map-cell">?</div><div class="map-cell">FUTURO</div></div><p>Completa la frase: «Nuestro próximo ________».</p>`;
+}
+let layerOrder=['W','K','I','I'];
+function renderLayers(){let names={K:'01 · Base y patas · K',I:'02 · Cuerpo · I',W:'03 · Cabeza · W'};layers.innerHTML='';layerOrder.forEach((x,i)=>{let row=document.createElement('div');row.className='layer';row.innerHTML='<div class="layer-art">'+names[x]+'</div><div><button type="button" data-dir="-1" data-i="'+i+'">↑</button><button type="button" data-dir="1" data-i="'+i+'">↓</button></div>';layers.append(row)});layers.querySelectorAll('button').forEach(b=>b.onclick=()=>{let i=+b.dataset.i,j=i+(+b.dataset.dir);if(j<0||j>=layerOrder.length)return;[layerOrder[i],layerOrder[j]]=[layerOrder[j],layerOrder[i]];renderLayers();if(layerOrder.join('')==='KIWI')layerResult.textContent='Secuencia reconstruida: K · I · W · I'})}
+function openLevel(id){active=C.levels.find(x=>x.id===id);levelCode.textContent='REGISTRO 0'+active.number;levelTitle.textContent=active.title;levelIntro.textContent=active.subtitle;answer.value=state.answers[id]||'';feedback.textContent='';hintCode.value='';hintText.textContent='';puzzle.innerHTML=puzzleHTML(id);show('level');if(id==='orientation')copyCipher.onclick=()=>navigator.clipboard?.writeText('URVD QR HV HO ILQDO');if(id==='form'){layerOrder=['W','K','I','I'];renderLayers()}}
+function validate(){return active.answers.map(dec).map(norm).includes(norm(answer.value))}
+function revealLevel(){let l=active;if(!state.completed.includes(l.id))state.completed.push(l.id);state.answers[l.id]=answer.value;save();revealTitle.textContent=l.number===1?'Primer vestigio recuperado':l.number===2?'Segundo vestigio recuperado':l.number===3?'Tercer vestigio recuperado':'Ruta abierta';revealText.textContent=l.number===1?'Hay objetos que guardan fotografías, voces y versiones de nosotros mismos. Este empezará a guardar las tuyas: iPhone 15 rosa.':l.number===2?'Una esencia deja una parte de ti allí donde estuviste: Just Moi de Juicy Couture.':l.number===3?'Kiwi será convertido en una figura personalizada impresa en 3D, construida capa a capa.':'Nos iremos de viaje por Europa. La fecha y el destino los elegiremos juntos.';show('reveal',false)}
+function renderBook(){pages.innerHTML='';C.levels.forEach(l=>{let done=state.completed.includes(l.id),p=document.createElement('article');p.className='page'+(done?'':' locked');p.innerHTML=done?'<small>PÁGINA 0'+l.number+'</small><strong>'+l.fragment+'</strong><p>'+l.title+'. Fragmento conservado.</p>':'<small>PÁGINA 0'+l.number+'</small><strong>—</strong><p>Contenido fuera de rumbo.</p>';if(done&&l.number===4){let b=document.createElement('button');b.className='secondary';b.textContent='Abrir carta';b.onclick=()=>show('letter',false);p.append(b)}pages.append(p)})}
+answerForm.onsubmit=e=>{e.preventDefault();state.attempts[active.id]=(state.attempts[active.id]||0)+1;state.answers[active.id]=answer.value;save();if(validate()){feedback.textContent='La señal coincide.';feedback.className='ok';setTimeout(revealLevel,300)}else{feedback.textContent='La señal no coincide todavía. Revisa el rumbo.';feedback.className='bad'}}
+unlockHint.onclick=()=>{let key=norm(hintCode.value).replaceAll(' ','-'),entry=Object.entries(active.hintCodes).find(([k])=>norm(k).replaceAll(' ','-')===key);hintText.textContent=entry?entry[1]:'Código no reconocido.';if(entry){state.hints[active.id]=[...new Set([...(state.hints[active.id]||[]),entry[0]])];save()}}
+bootContinue.onclick=()=>show('intro',false);start.onclick=()=>{state.started=true;save();renderHub();show('hub')};back.onclick=()=>{renderHub();show('hub')};document.getElementById('continue').onclick=()=>{renderHub();show('hub')};openBook.onclick=()=>{renderBook();show('book')};closeBook.onclick=()=>{renderHub();show('hub')};closeLetter.onclick=()=>{renderBook();show('book')};
+sound.onclick=()=>{state.sound=!state.sound;sound.textContent=state.sound?'●':'◌';save()};
+brand.onpointerdown=()=>holdTimer=setTimeout(()=>organizer.showModal(),4000);brand.onpointerup=()=>clearTimeout(holdTimer);brand.onclick=()=>{taps++;clearTimeout(tapTimer);if(taps>=5){taps=0;organizer.showModal()}tapTimer=setTimeout(()=>taps=0,1600)};
+orgEnter.onclick=()=>{if(orgPass.value===dec(C.meta.organizerPassword)){orgLogin.hidden=true;orgPanel.hidden=false;renderOrg()}else orgFeedback.textContent='Acceso no verificado.'};
+function renderOrg(){orgState.textContent=JSON.stringify(state,null,2);orgControls.innerHTML='';C.levels.forEach(l=>{let b=document.createElement('button');b.className='secondary';b.textContent=(state.completed.includes(l.id)?'Marcar pendiente ':'Completar ')+'Nivel '+l.number;b.onclick=()=>{state.completed=state.completed.includes(l.id)?state.completed.filter(x=>x!==l.id):[...state.completed,l.id];save();renderOrg();renderHub()};orgControls.append(b)})}
+simulate.onclick=()=>{state.started=true;state.completed=C.levels.map(x=>x.id);save();renderOrg();renderHub()};reset.onclick=()=>{if(confirm('¿Reiniciar progreso?')){state=fresh();save();location.reload()}};
+if(new URLSearchParams(location.search).get('organizer')==='true')organizer.showModal();
+function particles(){let c=ambient,x=c.getContext('2d'),ps=[];function rs(){c.width=innerWidth*devicePixelRatio;c.height=innerHeight*devicePixelRatio;c.style.width=innerWidth+'px';c.style.height=innerHeight+'px';x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);ps=Array.from({length:40},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.3+.3,v:Math.random()*.15+.04,a:Math.random()*.35+.08}))}function t(){x.clearRect(0,0,innerWidth,innerHeight);ps.forEach(p=>{p.y+=p.v;if(p.y>innerHeight)p.y=-3;x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fillStyle='rgba(231,180,199,'+p.a+')';x.fill()});requestAnimationFrame(t)}rs();addEventListener('resize',rs);t()}
+renderStatus();renderHub();particles();if(state.started)show('hub');else{show('boot',false);bootRun()}
 })();
