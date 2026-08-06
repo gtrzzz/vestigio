@@ -3,93 +3,164 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#08090b">
+<meta name="theme-color" content="#09090b">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>VESTIGIO</title>
+<title>VESTIGIO · Matrices</title>
 <link rel="stylesheet" href="./css/main.css">
 </head>
 <body>
 <canvas id="ambient"></canvas>
 
-<header id="topbar" class="topbar hidden">
-  <button id="brand" class="brand-button"><span class="brand-mark"><i></i><i></i><i></i><b></b></span></button>
-  <div class="brand-copy"><small>ORIGEN CONFIRMADO</small><strong>VESTIGIO</strong></div>
-  <button id="soundToggle" class="sound-button">◌</button>
+<header class="topbar">
+  <button id="brandButton" class="icon-button" aria-label="Símbolo de Vestigio">
+    <span class="brand-mark"><i></i><i></i><i></i><b></b></span>
+  </button>
+  <div><small>SUBSISTEMA 214</small><strong>MATRICES</strong></div>
+  <button id="pauseButton" class="icon-button" aria-label="Pausar">Ⅱ</button>
 </header>
 
-<main id="app">
-<section id="bootScene" class="scene active boot-scene">
-  <div class="boot-box">
-    <div class="boot-dots"><span></span><span></span><span></span></div>
-    <p id="bootStatus">Inicializando sesión…</p>
-    <div id="bootIdentity"></div>
-    <button id="bootContinue" class="primary concealed">Continuar</button>
-  </div>
-</section>
+<main class="app-shell">
+  <section id="introView" class="view active">
+    <div class="intro-card">
+      <small>PRUEBA DE RAZONAMIENTO ABSTRACTO</small>
+      <h1>Diez patrones.<br>Una sola secuencia.</h1>
+      <p>No necesitas conocer ninguna regla previa. Cada matriz contiene suficiente información para deducir la respuesta.</p>
+      <p class="warning">Las respuestas incorrectas no bloquean la prueba, pero quedan registradas.</p>
+      <button id="startButton" class="primary">Iniciar matrices</button>
+      <button id="resumeButton" class="secondary" hidden>Continuar progreso</button>
+    </div>
+  </section>
 
-<section id="introScene" class="scene">
-  <div class="frame intro-grid">
-    <div class="large-symbol"><i></i><i></i><i></i><i></i><b></b></div>
-    <div class="intro-copy"><small>MENSAJE VERIFICADO // RUMBO ALTERADO</small><h1>No estás aquí por accidente.</h1>
-      <p>Cuatro vestigios han cambiado de rumbo. Esta vez las respuestas no estarán en una sola pantalla.</p>
-      <em>Lo que se pierde no desaparece. Cambia de rumbo.</em>
-      <button id="startButton" class="primary">Iniciar recuperación</button>
+  <section id="matrixView" class="view">
+    <div class="matrix-shell">
+      <div class="matrix-topline">
+        <div>
+          <small id="matrixRule">REGLA</small>
+          <h2 id="matrixTitle">Matriz</h2>
+        </div>
+        <div class="matrix-stats">
+          <span id="matrixProgress">1 / 10</span>
+          <span id="timer">00:00</span>
+        </div>
+      </div>
+
+      <p id="matrixPrompt" class="muted"></p>
+      <div id="matrixGrid" class="matrix-grid" aria-label="Matriz de patrones"></div>
+      <div id="matrixOptions" class="matrix-options" aria-label="Opciones de respuesta"></div>
+
+      <div class="matrix-footer">
+        <p id="feedback" class="feedback" role="status"></p>
+        <button id="confirmButton" class="primary" disabled>Confirmar respuesta</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="resultView" class="view">
+    <div class="result-card">
+      <small>VALIDACIÓN COMPLETA</small>
+      <h2>Secuencia recuperada</h2>
+      <div id="symbolSequence" class="symbol-sequence"></div>
+      <dl class="result-stats">
+        <dt>Aciertos</dt><dd id="correctCount"></dd>
+        <dt>Intentos</dt><dd id="attemptCount"></dd>
+        <dt>Fragmentos</dt><dd id="scoreCount"></dd>
+        <dt>Tiempo</dt><dd id="totalTime"></dd>
+      </dl>
+      <p>La secuencia no es todavía una palabra. Debe conservarse para el expediente 214.</p>
+      <button id="restartButton" class="secondary">Reiniciar matrices</button>
+      <button id="exportButton" class="primary">Exportar resultado</button>
+    </div>
+  </section>
+
+<section id="dossierView" class="view">
+  <div class="dossier-shell">
+    <div class="dossier-head">
+      <div><small>EXPEDIENTE 214</small><h2>Archivo cinematográfico</h2></div>
+      <span id="selectedCount" class="dossier-count">0 seleccionadas</span>
+    </div>
+    <p class="dossier-quote">No recuerdes la historia. Recuerda únicamente aquello que nunca olvidaste.</p>
+    <div id="dossierGrid" class="dossier-grid"></div>
+    <div class="dossier-actions">
+      <button id="verifySelection" class="primary">Verificar selección</button>
+      <button id="clearSelection" class="secondary">Limpiar</button>
+    </div>
+    <p id="dossierFeedback" class="feedback"></p>
+
+    <div id="keywordStage" class="keyword-stage" hidden>
+      <small>ARCHIVO 214-B</small>
+      <h3>No leas. Busca.</h3>
+      <p>Escribe las palabras asociadas a las fotografías válidas. El sistema solo conservará las que coincidan con el archivo.</p>
+      <div id="keywordInputs" class="keyword-inputs"></div>
+      <button id="verifyKeywords" class="primary">Procesar palabras</button>
+      <div id="keywordResult" class="keyword-result"></div>
     </div>
   </div>
 </section>
 
-<section id="hubScene" class="scene"><div class="frame">
-  <div class="hub-header"><div><small>REGISTRO DE SESIÓN</small><h2>Ruta activa</h2><p id="returnMessage" class="muted"></p></div>
-  <button id="openBook" class="book-button"><span>CUADERNO</span><strong id="fragmentCount">0 / 4</strong></button></div>
-  <div class="progress-line"><span id="progressBar"></span></div>
-  <div id="recordList" class="record-list"></div>
-</div></section>
-
-<section id="levelScene" class="scene"><div class="frame">
-  <button id="backHub" class="back-button">← Volver a los registros</button>
-  <article class="case-file">
-    <div class="case-header"><div><small id="levelCode"></small><h2 id="levelTitle"></h2><p id="levelSubtitle" class="muted"></p></div><span class="verified-badge">VERIFICADO</span></div>
-    <div id="puzzleArea" class="puzzle-area"></div>
-    <form id="answerForm" class="answer-form">
-      <label for="answerInput">Clave de recuperación</label>
-      <div class="answer-row"><input id="answerInput" autocomplete="off" autocapitalize="characters"><button class="primary">Verificar</button></div>
-      <p id="answerFeedback" class="feedback"></p>
-    </form>
-    <details class="hint-panel"><summary>Introducir código de pista</summary>
-      <div class="answer-row"><input id="hintInput" autocomplete="off"><button id="hintButton" type="button" class="secondary">Desbloquear</button></div>
-      <div id="hintOutput" class="hint-output"></div>
-    </details>
-  </article>
-</div></section>
-
-<section id="revealScene" class="scene reveal-scene"><div class="reveal-wrap">
-  <div id="revealVisual" class="reveal-visual"></div><small>FRAGMENTO RECUPERADO</small><h2 id="revealTitle"></h2><p id="revealText"></p>
-  <button id="continueButton" class="primary">Continuar</button>
-</div></section>
-
-<section id="bookScene" class="scene"><div class="frame">
-  <button id="closeBook" class="back-button">← Cerrar cuaderno</button>
-  <div class="book-cover"><small>ARCHIVO CENTRAL</small><h2>El Cuaderno de la Deriva</h2><p>Una habitación aparece más de una vez: 217.</p></div>
-  <div id="bookPages" class="book-pages"></div>
-</div></section>
-
-<section id="letterScene" class="scene letter-scene"><article class="letter">
-  <small>RUTA ABIERTA</small><h2>Ania,</h2>
-  <p>No había un país escondido detrás de las pistas.</p>
-  <p>Había una ruta abierta: una experiencia por Europa que elegiremos juntos, ya sea nieve, montaña, quads, karts, carretera o una escapada rural.</p>
-  <p>El último enigma no consistía en encontrar el destino. Consistía en descubrir que todavía podemos crearlo.</p>
-  <p class="signature">Iván</p><button id="closeLetter" class="secondary">Volver al cuaderno</button>
-</article></section>
-</main>
-
-<footer id="footer" class="footer hidden"><span id="sessionLabel"></span><span>ALMACENAMIENTO: LOCAL ACTIVO</span></footer>
-
-<dialog id="organizerDialog">
-<form method="dialog" class="dialog-header"><div><small>ACCESO RESTRINGIDO</small><h2>Modo Organizador</h2></div><button value="cancel">×</button></form>
-<div id="organizerLogin"><label for="organizerPassword">Contraseña</label><div class="answer-row"><input id="organizerPassword" type="password" inputmode="numeric"><button id="organizerEnter" class="primary">Entrar</button></div><p id="organizerFeedback"></p></div>
-<div id="organizerPanel" hidden><pre id="organizerState"></pre><div id="organizerControls"></div><button id="simulateAll" class="secondary">Simular resolución completa</button><button id="resetProgress" class="danger">Reiniciar progreso</button></div>
+<dialog id="dossierViewer">
+  <form method="dialog" class="dialog-header">
+    <div><small id="dossierViewerCode"></small><h2 id="dossierViewerTitle"></h2></div>
+    <button value="cancel">×</button>
+  </form>
+  <div class="dossier-viewer-layout">
+    <div>
+      <div class="dossier-media"><img id="dossierViewerImage" alt=""></div>
+      <div class="viewer-tools">
+        <button id="viewerRotate" type="button" class="secondary">Rotar</button>
+        <button id="viewerNegative" type="button" class="secondary">Negativo</button>
+        <button id="viewerContrast" type="button" class="secondary">Contraste</button>
+      </div>
+    </div>
+    <aside>
+      <dl id="dossierMeta"></dl>
+      <label><input id="pinImportant" type="checkbox"> Marcar como importante</label>
+      <textarea id="dossierNote" rows="6" placeholder="Notas de investigación"></textarea>
+      <button id="saveDossierNote" class="secondary" type="button">Guardar nota</button>
+    </aside>
+  </div>
 </dialog>
 
-<script src="./config/config.js"></script>
+</main>
+
+<dialog id="pauseDialog">
+  <form method="dialog" class="dialog-header">
+    <div><small>SESIÓN PAUSADA</small><h2>Progreso guardado</h2></div>
+    <button value="cancel">×</button>
+  </form>
+  <p>Puedes cerrar Safari y continuar más tarde desde la misma matriz.</p>
+  <button id="continueDialogButton" class="primary">Continuar</button>
+</dialog>
+
+<dialog id="organizerDialog">
+  <form method="dialog" class="dialog-header">
+    <div><small>ACCESO RESTRINGIDO</small><h2>Organizador</h2></div>
+    <button value="cancel">×</button>
+  </form>
+  <div id="organizerLogin">
+    <label for="organizerPassword">Contraseña</label>
+    <div class="input-row">
+      <input id="organizerPassword" type="password" inputmode="numeric">
+      <button id="organizerEnter" class="primary">Entrar</button>
+    </div>
+  </div>
+  <div id="organizerPanel" hidden>
+    <pre id="organizerState"></pre>
+    <div class="organizer-actions">
+      <button id="solveCurrent" class="secondary">Resolver actual</button>
+      <button id="skipCurrent" class="secondary">Saltar actual</button>
+      <button id="showSolution" class="secondary">Mostrar solución</button>
+      <button id="resetEngine" class="danger">Reiniciar motor</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="./config/matrix-settings.js"></script>
+<script src="./config/matrices.js"></script>
+<script src="./config/dossier.js"></script>
+<script src="./js/matrices/matrix-storage.js"></script>
+<script src="./js/matrices/matrix-renderer.js"></script>
+<script src="./js/matrices/matrix-engine.js"></script>
+<script src="./js/dossier/dossier-engine.js"></script>
 <script src="./js/app.js"></script>
-</body></html>
+</body>
+</html>
