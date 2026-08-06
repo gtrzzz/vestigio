@@ -1,275 +1,115 @@
 (() => {
-const C = window.VESTIGIO_CONFIG;
-const $ = id => document.getElementById(id);
-const decode = s => { try { return decodeURIComponent(Array.from(atob(s)).map(c => '%' + c.charCodeAt(0).toString(16).padStart(2,'0')).join('')); } catch { return atob(s); } };
-const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim().replace(/[^A-Z0-9]+/g,' ').replace(/\s+/g,' ');
-const fresh = () => ({
-  session:'VST-'+Date.now().toString(36).toUpperCase(),
-  firstOpened:new Date().toISOString(),
-  started:false, completed:[], attempts:{}, answers:{}, hints:{}, sound:false,
-  substeps:{orientation:[], essence:[], form:[], destination:[]}
-});
-let state;
-try { state = JSON.parse(localStorage.getItem(C.meta.storageKey)) || fresh(); } catch { state = fresh(); }
-let activeLevel = null, holdTimer = null, tapCount = 0, tapReset = null;
-const scenes = ['bootScene','introScene','hubScene','levelScene','revealScene','bookScene','letterScene'];
+const C=window.VESTIGIO_CONFIG,$=id=>document.getElementById(id);
+const dec=s=>{try{return decodeURIComponent(Array.from(atob(s)).map(c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0')).join(''))}catch{return atob(s)}};
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim().replace(/[^A-Z0-9]+/g,' ').replace(/\s+/g,' ');
+const fresh=()=>({session:'VST-'+Date.now().toString(36).toUpperCase(),firstOpened:new Date().toISOString(),started:false,completed:[],attempts:{},answers:{},hints:{},matrixAnswers:[],matrixComplete:false,jigsawComplete:false,bookComplete:false,routeComplete:false});
+let state;try{state=JSON.parse(localStorage.getItem(C.meta.storageKey))||fresh()}catch{state=fresh()}
+let activeLevel=null,holdTimer,tapCount=0,tapReset;
+const sceneIds=['bootScene','introScene','hubScene','levelScene','revealScene','bookScene','letterScene'];
+function save(){try{localStorage.setItem(C.meta.storageKey,JSON.stringify(state))}catch{}$('sessionLabel').textContent='SESIÓN: '+state.session}
+function show(id,chrome=true){sceneIds.forEach(x=>$(x).classList.remove('active'));$(id).classList.add('active');$('topbar').classList.toggle('hidden',!chrome);$('footer').classList.toggle('hidden',!chrome);scrollTo(0,0)}
+async function boot(){for(const [t,d] of [['Inicializando sesión…',650],['Verificando origen…',750],['Buscando habitaciones…',780],['Sincronizando memoria…',820]]){$('bootStatus').textContent=t;await new Promise(r=>setTimeout(r,d))}$('bootStatus').textContent='Coincidencias encontradas: 1';await new Promise(r=>setTimeout(r,600));$('bootIdentity').innerHTML='<span>Identidad vinculada</span><strong>'+C.meta.player+'</strong>';await new Promise(r=>setTimeout(r,700));$('bootStatus').textContent='Acceso concedido.';$('bootContinue').classList.remove('concealed')}
+function unlocked(l){if(l.number===1)return state.started;return state.completed.includes(C.levels[l.number-2].id)}
+function renderHub(){const n=state.completed.length;$('fragmentCount').textContent=n+' / 4';$('progressBar').style.width=(n*25)+'%';$('returnMessage').textContent='La sesión de '+C.meta.player+' está activa.';const list=$('recordList');list.innerHTML='';C.levels.forEach(l=>{const done=state.completed.includes(l.id),u=unlocked(l),b=document.createElement('button');b.className='record'+(done?' complete':'');b.disabled=!u;b.innerHTML='<div class="record-top"><small>REGISTRO 0'+l.number+'</small><span class="record-status">'+(done?'RECUPERADO':u?'DISPONIBLE':'BLOQUEADO')+'</span></div><h3>'+l.title+'</h3><p>'+l.subtitle+'</p>';b.onclick=()=>openLevel(l.id);list.append(b)})}
 
-function save(){ try{ localStorage.setItem(C.meta.storageKey, JSON.stringify(state)); }catch{} renderFooter(); }
-function showScene(id, chrome=true){
-  scenes.forEach(s => $(s).classList.remove('active'));
-  $(id).classList.add('active');
-  $('topbar').classList.toggle('hidden', !chrome);
-  $('footer').classList.toggle('hidden', !chrome);
-  scrollTo(0,0);
+const matrices=[
+ {a:'dot1',b:'dot2',c:'dot3',d:'line1',e:'line2',f:'line3',g:'tri1',h:'tri2',correct:2},
+ {a:'sq1',b:'sq2',c:'sq3',d:'sq2',e:'sq3',f:'sq4',g:'sq3',h:'sq4',correct:4},
+ {a:'triUp',b:'triRight',c:'triDown',d:'triRight',e:'triDown',f:'triLeft',g:'triDown',h:'triLeft',correct:1},
+ {a:'circle1',b:'circle2',c:'circle3',d:'cross1',e:'cross2',f:'cross3',g:'diamond1',h:'diamond2',correct:3},
+ {a:'bar1',b:'bar2',c:'bar3',d:'bar2',e:'bar3',f:'bar4',g:'bar3',h:'bar4',correct:1},
+ {a:'moon1',b:'moon2',c:'moon3',d:'moon2',e:'moon3',f:'moon4',g:'moon3',h:'moon4',correct:4},
+ {a:'pair1',b:'pair2',c:'pair3',d:'pair2',e:'pair3',f:'pair4',g:'pair3',h:'pair4',correct:2},
+ {a:'diag1',b:'diag2',c:'diag3',d:'diag2',e:'diag3',f:'diag4',g:'diag3',h:'diag4',correct:3},
+ {a:'ring1',b:'ring2',c:'ring3',d:'ring2',e:'ring3',f:'ring4',g:'ring3',h:'ring4',correct:1},
+ {a:'arrow1',b:'arrow2',c:'arrow3',d:'arrow2',e:'arrow3',f:'arrow4',g:'arrow3',h:'arrow4',correct:2}
+];
+function symbolSVG(type){
+ const common='viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"';
+ const map={
+ dot1:'<circle cx="50" cy="50" r="8" fill="currentColor"/>',dot2:'<circle cx="35" cy="50" r="7" fill="currentColor"/><circle cx="65" cy="50" r="7" fill="currentColor"/>',dot3:'<circle cx="25" cy="50" r="6" fill="currentColor"/><circle cx="50" cy="50" r="6" fill="currentColor"/><circle cx="75" cy="50" r="6" fill="currentColor"/>',
+ line1:'<path d="M20 50H80"/>',line2:'<path d="M20 38H80M20 62H80"/>',line3:'<path d="M20 28H80M20 50H80M20 72H80"/>',
+ tri1:'<path d="M50 20L80 75H20Z"/>',tri2:'<path d="M35 25L65 25L80 75H20Z"/>',tri3:'<path d="M20 30H80L50 80Z"/>',
+ sq1:'<rect x="35" y="35" width="30" height="30"/>',sq2:'<rect x="25" y="25" width="50" height="50"/><rect x="42" y="42" width="16" height="16"/>',sq3:'<rect x="16" y="16" width="68" height="68"/><rect x="32" y="32" width="36" height="36"/><rect x="45" y="45" width="10" height="10"/>',sq4:'<rect x="12" y="12" width="76" height="76"/><path d="M12 50H88M50 12V88"/>',
+ triUp:'<path d="M50 15L85 80H15Z"/>',triRight:'<path d="M85 50L20 85V15Z"/>',triDown:'<path d="M50 85L15 20H85Z"/>',triLeft:'<path d="M15 50L80 15V85Z"/>',
+ circle1:'<circle cx="50" cy="50" r="28"/>',circle2:'<circle cx="50" cy="50" r="28"/><path d="M22 50H78"/>',circle3:'<circle cx="50" cy="50" r="28"/><path d="M22 50H78M50 22V78"/>',
+ cross1:'<path d="M20 50H80"/>',cross2:'<path d="M20 50H80M50 20V80"/>',cross3:'<path d="M20 50H80M50 20V80M28 28L72 72"/>',
+ diamond1:'<path d="M50 15L85 50L50 85L15 50Z"/>',diamond2:'<path d="M50 15L85 50L50 85L15 50Z"/><path d="M15 50H85"/>',diamond3:'<path d="M50 15L85 50L50 85L15 50Z"/><path d="M15 50H85M50 15V85"/>',
+ bar1:'<rect x="18" y="42" width="64" height="16"/>',bar2:'<rect x="18" y="30" width="64" height="12"/><rect x="18" y="58" width="64" height="12"/>',bar3:'<rect x="18" y="20" width="64" height="10"/><rect x="18" y="45" width="64" height="10"/><rect x="18" y="70" width="64" height="10"/>',bar4:'<path d="M20 20H80M20 40H80M20 60H80M20 80H80"/>',
+ moon1:'<path d="M67 20A34 34 0 1 0 67 80A27 27 0 0 1 67 20Z"/>',moon2:'<path d="M33 20A34 34 0 1 1 33 80A27 27 0 0 0 33 20Z"/>',moon3:'<circle cx="50" cy="50" r="31"/><path d="M50 19V81"/>',moon4:'<circle cx="50" cy="50" r="31"/><path d="M19 50H81"/>',
+ pair1:'<circle cx="35" cy="50" r="18"/><circle cx="65" cy="50" r="18"/>',pair2:'<circle cx="50" cy="35" r="18"/><circle cx="50" cy="65" r="18"/>',pair3:'<rect x="18" y="32" width="64" height="36"/><path d="M50 32V68"/>',pair4:'<rect x="32" y="18" width="36" height="64"/><path d="M32 50H68"/>',
+ diag1:'<path d="M20 80L80 20"/>',diag2:'<path d="M15 70L70 15M30 85L85 30"/>',diag3:'<path d="M12 58L58 12M21 79L79 21M42 88L88 42"/>',diag4:'<path d="M15 15L85 85M85 15L15 85"/>',
+ ring1:'<circle cx="50" cy="50" r="16"/>',ring2:'<circle cx="50" cy="50" r="29"/><circle cx="50" cy="50" r="12"/>',ring3:'<circle cx="50" cy="50" r="38"/><circle cx="50" cy="50" r="24"/><circle cx="50" cy="50" r="10"/>',ring4:'<circle cx="50" cy="50" r="38"/><path d="M12 50H88M50 12V88"/>',
+ arrow1:'<path d="M20 50H75M58 32L76 50L58 68"/>',arrow2:'<path d="M50 80V25M32 42L50 24L68 42"/>',arrow3:'<path d="M80 50H25M42 32L24 50L42 68"/>',arrow4:'<path d="M50 20V75M32 58L50 76L68 58"/>'
+ };
+ return '<svg '+common+'>'+ (map[type]||map.dot1) +'</svg>';
 }
-async function runBoot(){
-  for(const [text,delay] of [['Inicializando sesión…',700],['Verificando origen…',800],['Sincronizando memoria…',850],['Escaneando registros…',850]]){
-    $('bootStatus').textContent=text; await new Promise(r=>setTimeout(r,delay));
-  }
-  $('bootStatus').textContent='Coincidencias encontradas: 1';
-  await new Promise(r=>setTimeout(r,650));
-  $('bootIdentity').innerHTML='<span>Identidad vinculada</span><strong>'+C.meta.player+'</strong>';
-  await new Promise(r=>setTimeout(r,850));
-  $('bootStatus').textContent='Acceso concedido.';
-  $('bootContinue').classList.remove('concealed');
+function matrixHTML(){
+ return '<div class="matrix-shell"><div class="matrix-header"><div><small>PRUEBA DE PATRONES</small><h3>Secuencia de matrices</h3></div><strong id="matrixIndex">1 / 10</strong></div><p class="muted">Selecciona la figura que completa cada matriz. Al terminar recibirás un código.</p><div id="matrixBoard"></div><div id="matrixCodeBox"></div></div>';
 }
-function renderFooter(){
-  $('sessionLabel').textContent='SESIÓN: '+state.session;
-  $('storageLabel').textContent='ALMACENAMIENTO: LOCAL ACTIVO';
+let matrixStep=0,tempMatrixAnswers=[];
+function renderMatrix(){
+ const m=matrices[matrixStep],board=$('matrixBoard'); if(!board)return;
+ $('matrixIndex').textContent=(matrixStep+1)+' / 10';
+ const cells=[m.a,m.b,m.c,m.d,m.e,m.f,m.g,m.h,null];
+ board.innerHTML='<div class="matrix-board">'+cells.map(x=>'<div class="matrix-cell">'+(x?symbolSVG(x):'<span>?</span>')+'</div>').join('')+'</div><div class="matrix-options">'+[1,2,3,4].map(n=>'<button type="button" class="matrix-option" data-option="'+n+'">'+symbolSVG(optionSymbol(m,n))+'</button>').join('')+'</div>';
+ board.querySelectorAll('.matrix-option').forEach(b=>b.onclick=()=>selectMatrix(+b.dataset.option));
 }
-function unlocked(level){
-  if(level.number===1) return state.started;
-  return state.completed.includes(C.levels[level.number-2].id);
+function optionSymbol(m,n){
+ const pools=[
+  ['tri3','tri1','tri2','circle1'],['sq1','sq2','sq3','sq4'],['triUp','triRight','triDown','triLeft'],['diamond1','diamond2','diamond3','cross3'],
+  ['bar4','bar1','bar2','bar3'],['moon1','moon2','moon3','moon4'],['pair1','pair2','pair3','pair4'],['diag1','diag2','diag3','diag4'],['ring4','ring1','ring2','ring3'],['arrow1','arrow4','arrow3','arrow2']
+ ];
+ return pools[matrixStep][n-1];
 }
-function renderHub(){
-  $('fragmentCount').textContent=state.completed.length+' / 4';
-  $('progressBar').style.width=(state.completed.length*25)+'%';
-  const days=Math.max(0,Math.floor((Date.now()-new Date(state.firstOpened).getTime())/86400000));
-  $('returnMessage').textContent=days>0?'Han pasado '+days+' días desde la primera señal. El rumbo continúa intacto.':'La sesión de '+C.meta.player+' está activa.';
-  const list=$('recordList'); list.innerHTML='';
-  C.levels.forEach(level=>{
-    const done=state.completed.includes(level.id), u=unlocked(level);
-    const b=document.createElement('button');
-    b.className='record'+(done?' complete':''); b.disabled=!u;
-    b.innerHTML='<div class="record-top"><small>REGISTRO 0'+level.number+'</small><span class="record-status">'+(done?'RECUPERADO':u?'DISPONIBLE':'BLOQUEADO')+'</span></div><h3>'+level.title+'</h3><p>'+level.subtitle+'</p>';
-    b.onclick=()=>openLevel(level.id); list.append(b);
-  });
+function selectMatrix(n){
+ tempMatrixAnswers[matrixStep]=n;
+ if(n===matrices[matrixStep].correct){
+  if(matrixStep<9){matrixStep++;renderMatrix();}
+  else{state.matrixAnswers=tempMatrixAnswers.slice();state.matrixComplete=true;save();$('matrixBoard').innerHTML='';$('matrixCodeBox').innerHTML='<div class="matrix-code">CÓDIGO RECUPERADO: '+C.matrixCode+'</div><p class="muted">No es una contraseña. Guarda la secuencia.</p>';}
+ }else{
+  const box=$('matrixCodeBox');box.innerHTML='<p class="feedback bad">La relación no se mantiene. Revisa filas y columnas.</p>';
+ }
 }
-function puzzleOrientation(){
-  return `
-  <div class="dossier-grid two">
-    <section class="paper">
-      <h3>COMUNICACIÓN RECIBIDA</h3>
-      <div class="cipher">QHE RUFZH YOLTK<br>CLU GRJMP LSBOQ<br>URVD QR HV HO ILQDO<br>XIBPXB XIBPXB XIBPXB</div>
-      <div class="file-tools">
-        <button type="button" class="micro-button" id="copyOrientation">Copiar texto</button>
-        <button type="button" class="micro-button" id="inspectOrientation">Inspeccionar archivo</button>
-      </div>
-      <div id="orientationMeta" class="reveal-box">
-        ARCHIVO: V-01.txt<br>
-        LÍNEAS: 4<br>
-        ANOMALÍA: la tercera línea utiliza un patrón estable.<br>
-        MARCA ANGULAR: 15°
-      </div>
-    </section>
-    <section class="compass-card">
-      <small>LECTURA DE RUMBO</small>
-      <div class="compass"></div>
-      <p>La desviación no es un error. Es la clave.</p>
-    </section>
-  </div>
-  <section class="paper" style="margin-top:14px">
-    <h3>NOTA DE CAMPO</h3>
-    <p>Observa. Resta. Ajusta. Revela.</p>
-    <p>Cuando la tercera línea hable, busca una palabra que describa lo ocurrido con la aguja.</p>
-  </section>`;
+
+function orientationPuzzle(){return `<div class="dossier-grid two"><section class="paper"><h3>COMUNICACIÓN RECIBIDA</h3><div class="cipher">QHE RUFZH YOLTK<br>CLU GRJMP LSBOQ<br>URVD QR HV HO ILQDO<br>XIBPXB XIBPXB XIBPXB</div><div class="file-tools"><button type="button" class="micro-button" id="inspectOrientation">Inspeccionar archivo</button></div><div id="orientationMeta" class="reveal-box">ANOMALÍA: tercera línea estable · MARCA: 15°</div></section><section class="compass-card"><div class="compass"></div><p>La desviación no es un error.</p></section></div><div class="photo-grid"><img class="dossier-photo" src="./assets/images/photo-compass-case.png"><img class="dossier-photo" src="./assets/images/photo-overlook.png"></div>`}
+function essencePuzzle(){return `<div class="dossier-grid two"><section class="paper"><h3>FICHA DE ESENCIA // 214</h3><div class="scent-table"><div class="scent-row"><span>SALIDA</span><span>bergamota · pera · lichi</span></div><div class="scent-row"><span>CORAZÓN</span><span>rosa · peonía · jazmín</span></div><div class="scent-row"><span>FONDO</span><span>magnolia · ámbar · cedro</span></div></div><div id="mirrorText" class="mirror-text">OY OLOS</div><div class="file-tools"><button type="button" class="micro-button" id="mirrorButton">Usar espejo</button><button type="button" class="micro-button" id="rewindButton">Rebobinar</button></div></section><section class="film-strip"><article class="film-frame"><strong>PUERTA</strong><p>Una palabra escrita al revés.</p><span>REDRUM</span></article><article class="film-frame"><strong>PASILLO</strong><p>Dos figuras idénticas.</p><span>PAREJAS</span></article><article class="film-frame"><strong>CINTA</strong><p>El principio está al final.</p><span>REBOBINAR</span></article></section></div><div class="photo-grid"><img class="dossier-photo" src="./assets/images/photo-filmstrip.png"><img class="dossier-photo" src="./assets/images/photo-horror-dossier.png"></div>${matrixHTML()}`}
+let pieces=[],selectedPiece=null;
+function initJigsaw(){
+ pieces=Array.from({length:9},(_,i)=>({tile:i,rot:[0,90,180,270][Math.floor(Math.random()*4)],flip:Math.random()<.45}));
+ pieces.sort(()=>Math.random()-.5);selectedPiece=null;renderJigsaw();
 }
-function puzzleEssence(){
-  return `
-  <div class="dossier-grid two">
-    <section class="paper">
-      <h3>FICHA DE ESENCIA // N.º 214</h3>
-      <div class="scent-table">
-        <div class="scent-row"><span>SALIDA</span><span>bergamota · pera · lichi</span></div>
-        <div class="scent-row"><span>CORAZÓN</span><span>rosa · peonía · jazmín</span></div>
-        <div class="scent-row"><span>FONDO</span><span>magnolia · ámbar · cedro</span></div>
-      </div>
-      <div id="mirrorText" class="mirror-text">OY OLOS</div>
-      <div class="file-tools">
-        <button type="button" class="micro-button" id="mirrorButton">Usar espejo</button>
-        <button type="button" class="micro-button" id="rewindButton">Rebobinar cinta</button>
-      </div>
-      <div id="essenceLog" class="reveal-box">No se ha aplicado ningún método.</div>
-    </section>
-    <section class="film-strip">
-      <article class="film-frame"><strong>FOTOGRAMA A</strong><p>Una palabra escrita al revés sobre una puerta.</p><span>REDRUM</span></article>
-      <article class="film-frame"><strong>FOTOGRAMA B</strong><p>Dos figuras idénticas observan desde un pasillo.</p><span>GEMELAS</span></article>
-      <article class="film-frame"><strong>FOTOGRAMA C</strong><p>Una cinta espera a ser reproducida desde el principio.</p><span>REBOBINAR</span></article>
-    </section>
-  </div>
-  <section class="paper" style="margin-top:14px">
-    <h3>NOTA PRIVADA</h3>
-    <p>No es solo una fragancia. Es una firma.</p>
-    <p>El juego no está en las palabras importantes, sino en el método que sugieren los fotogramas.</p>
-  </section>`;
+function renderJigsaw(){
+ const grid=$('jigsawGrid'); if(!grid)return;grid.innerHTML='';
+ pieces.forEach((p,pos)=>{const b=document.createElement('button');b.type='button';b.className='jigsaw-piece'+(selectedPiece===pos?' selected':'');b.style.transform=`rotate(${p.rot}deg) rotateY(${p.flip?180:0}deg)`;const x=(p.tile%3)*50,y=Math.floor(p.tile/3)*50;b.innerHTML=`<span class="jigsaw-face" style="background-position:${x}% ${y}%"></span><span class="jigsaw-back">K-${p.tile+1}</span>`;b.onclick=()=>selectPiece(pos);grid.append(b)});
+ checkJigsaw();
 }
-let layerOrder = ['W','I','K','I'];
-const layerNames = {
-  K:'00.20 mm · BASE · K',
-  I:'18.40 mm · TORSO · I',
-  W:'41.80 mm · CABEZA · W'
-};
-function puzzleForm(){
-  return `
-  <div class="dossier-grid two">
-    <section class="paper">
-      <h3>ESCANEO 3D // SUJETO K</h3>
-      <img class="kiwi-photo" src="./assets/images/kiwi-reference.jpeg" alt="Kiwi con una pelota de tenis">
-      <p>Orejas grandes. Pecho claro. Pelota siempre cerca. Cuerpo alargado.</p>
-    </section>
-    <section>
-      <div id="scanLayers" class="scan-grid"></div>
-      <p id="scanResult" class="scan-result"></p>
-      <div class="paper" style="margin-top:12px">
-        <h3>ESPECIFICACIONES</h3>
-        <p>Altura: 73 mm<br>Longitud: 112 mm<br>Ancho: 48 mm<br>Capas: 0.20 mm<br>Material: PLA<br>Tiempo: 4 h 13 min</p>
-      </div>
-    </section>
-  </div>`;
-}
-function puzzleDestination(){
-  const words=['NO','ERA','UNA','FECHA','LA','DIRECCION','SIEMPRE','CAMBIA','CUANDO','ALGUIEN','RECUERDA','SU','NOMBRE','YO','CONSTRUYO','CAPA','A','CAPA','NUESTRO','PROXIMO','RECUERDO','TODAVIA','NO','EXISTE','EUROPA'];
-  return `
-  <section class="final-book-text">
-    <small>EXTRACTO DEL CUADERNO</small>
-    <div class="fragment-row"><span class="fragment-chip">15</span><span class="fragment-chip">YO</span><span class="fragment-chip">CAPA</span></div>
-    <p>Las respuestas nunca son aisladas. El número señala una posición; la identidad selecciona una voz; la forma indica que existe una segunda lectura.</p>
-    <div class="book-cipher">${words.map((w,i)=>'<div class="book-word" data-index="'+(i+1)+'">'+(i+1)+' · '+w+'</div>').join('')}</div>
-    <div class="file-tools">
-      <button type="button" class="secondary" id="applyBookCipher">Aplicar fragmentos</button>
-    </div>
-    <div id="destinationResult" class="hint-output">Resultado pendiente.</div>
-  </section>`;
-}
-function renderLayers(){
-  const box=$('scanLayers'); if(!box) return; box.innerHTML='';
-  layerOrder.forEach((letter,index)=>{
-    const row=document.createElement('div'); row.className='scan-layer';
-    row.innerHTML='<div class="scan-art">'+layerNames[letter]+'</div><div class="scan-controls"><button type="button" data-dir="-1" data-i="'+index+'">↑</button><button type="button" data-dir="1" data-i="'+index+'">↓</button></div>';
-    box.append(row);
-  });
-  box.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
-    const i=+btn.dataset.i,j=i+(+btn.dataset.dir); if(j<0||j>=layerOrder.length) return;
-    [layerOrder[i],layerOrder[j]]=[layerOrder[j],layerOrder[i]]; renderLayers();
-    if(layerOrder.join('')==='KIWI'){
-      $('scanResult').textContent='SECUENCIA VALIDADA: K · I · W · I';
-      if(!state.substeps.form.includes('layers')) state.substeps.form.push('layers'); save();
-    } else $('scanResult').textContent='Secuencia incompleta.';
-  });
-}
+function selectPiece(pos){if(selectedPiece===null){selectedPiece=pos}else if(selectedPiece===pos){selectedPiece=null}else{[pieces[selectedPiece],pieces[pos]]=[pieces[pos],pieces[selectedPiece]];selectedPiece=null}renderJigsaw()}
+function rotatePiece(){if(selectedPiece===null)return;pieces[selectedPiece].rot=(pieces[selectedPiece].rot+90)%360;renderJigsaw()}
+function flipPiece(){if(selectedPiece===null)return;pieces[selectedPiece].flip=!pieces[selectedPiece].flip;renderJigsaw()}
+function checkJigsaw(){const ok=pieces.every((p,i)=>p.tile===i&&p.rot===0&&!p.flip);if(ok){state.jigsawComplete=true;save();$('jigsawStatus').textContent='RECONSTRUCCIÓN COMPLETA // SUJETO IDENTIFICABLE'}else $('jigsawStatus').textContent='Selecciona una pieza. Toca otra para intercambiarla.'}
+function formPuzzle(){return `<div class="jigsaw-wrap"><div class="paper"><h3>ESCANEO FOTOGRÁFICO // SUJETO K</h3><p>Nueve piezas. Cada una puede estar en una posición incorrecta, girada o mostrando el reverso.</p></div><div id="jigsawGrid" class="jigsaw-grid"></div><div class="jigsaw-controls"><button type="button" id="rotatePiece" class="secondary">Girar 90°</button><button type="button" id="flipPiece" class="secondary">Dar la vuelta</button><button type="button" id="shufflePuzzle" class="secondary">Reiniciar mezcla</button></div><p id="jigsawStatus" class="jigsaw-status"></p><div class="photo-grid"><img class="dossier-photo" src="./assets/images/photo-kiwi-scan.png"><img class="dossier-photo" src="./assets/images/kiwi-reference.jpeg"></div></div>`}
+function finalPuzzle(){return `<div class="door-217"><div class="door-card"></div><div class="book-217"><small>REGISTRO DE HABITACIÓN // 217</small><h3>Libro de huéspedes</h3><div class="book-lines"><div class="book-line"><span>NUNCA COORDENADAS LA RUTA</span></div><div class="book-line"><span>DUERME NADIE SIN ABRE</span></div><div class="book-line"><span>ELIGE JUNTOS NORTE NIEVE</span></div><div class="book-line"><span>EUROPA ESPERA TODAVIA FUERA</span></div></div><p>El código de matrices debe agruparse en parejas: línea-palabra.</p><div class="file-tools"><button type="button" id="applyBook" class="secondary">Aplicar código</button></div><div id="bookResult" class="hint-output">Código pendiente.</div></div></div><div class="photo-grid"><img class="dossier-photo" src="./assets/images/photo-map-route.png"><img class="dossier-photo" src="./assets/images/photo-overlook.png"></div><div class="route-machine"><small>MÁQUINA DE RUTA</small><h3>Construye una posibilidad, no una coordenada</h3><div class="route-dials"><div id="dialMood" class="route-dial">ATMÓSFERA<br>—</div><div id="dialMotion" class="route-dial">MOVIMIENTO<br>—</div><div id="dialPlace" class="route-dial">ENTORNO<br>—</div></div><div class="route-options"><button type="button" data-kind="mood" data-value="NIEVE" class="secondary">Nieve</button><button type="button" data-kind="mood" data-value="CALMA" class="secondary">Calma</button><button type="button" data-kind="motion" data-value="KARTS" class="secondary">Karts</button><button type="button" data-kind="motion" data-value="QUADS" class="secondary">Quads</button><button type="button" data-kind="place" data-value="MONTAÑA" class="secondary">Montaña</button><button type="button" data-kind="place" data-value="CARRETERA" class="secondary">Carretera</button></div><div id="routeResult" class="route-result">La ruta necesita tres decisiones.</div></div>`}
+
 function openLevel(id){
-  activeLevel=C.levels.find(l=>l.id===id);
-  $('levelCode').textContent='REGISTRO 0'+activeLevel.number;
-  $('levelTitle').textContent=activeLevel.title;
-  $('levelSubtitle').textContent=activeLevel.subtitle;
-  $('answerInput').value=state.answers[id]||'';
-  $('answerFeedback').textContent=''; $('hintInput').value=''; $('hintOutput').textContent='';
-  $('puzzleArea').innerHTML=id==='orientation'?puzzleOrientation():id==='essence'?puzzleEssence():id==='form'?puzzleForm():puzzleDestination();
-  showScene('levelScene');
-  if(id==='orientation'){
-    $('copyOrientation').onclick=()=>navigator.clipboard?.writeText('QHE RUFZH YOLTK\nCLU GRJMP LSBOQ\nURVD QR HV HO ILQDO\nXIBPXB XIBPXB XIBPXB');
-    $('inspectOrientation').onclick=()=>{ $('orientationMeta').classList.add('visible'); if(!state.substeps.orientation.includes('meta')) state.substeps.orientation.push('meta'); save(); };
-  }
-  if(id==='essence'){
-    let mirrored=false,rewound=false;
-    const update=()=>{
-      const log=$('essenceLog'); log.classList.add('visible');
-      if(mirrored&&rewound){ log.textContent='MÉTODOS COMBINADOS: SOLO YO'; if(!state.substeps.essence.includes('methods')) state.substeps.essence.push('methods'); save(); }
-      else if(mirrored) log.textContent='ESPEJO APLICADO: SOLO YO';
-      else if(rewound) log.textContent='CINTA REBOBINADA: OY OLOS';
-    };
-    $('mirrorButton').onclick=()=>{ mirrored=true; $('mirrorText').textContent='SOLO YO'; update(); };
-    $('rewindButton').onclick=()=>{ rewound=true; $('mirrorText').textContent=$('mirrorText').textContent.split('').reverse().join(''); update(); };
-  }
-  if(id==='form'){ layerOrder=['W','I','K','I']; renderLayers(); }
-  if(id==='destination'){
-    $('applyBookCipher').onclick=()=>{
-      $('destinationResult').textContent='15 → YO → CAPA. Segunda lectura encontrada: NUESTRO PRÓXIMO RECUERDO.';
-      if(!state.substeps.destination.includes('book')) state.substeps.destination.push('book'); save();
-    };
-  }
+ activeLevel=C.levels.find(l=>l.id===id);$('levelCode').textContent='REGISTRO 0'+activeLevel.number;$('levelTitle').textContent=activeLevel.title;$('levelSubtitle').textContent=activeLevel.subtitle;$('answerInput').value=state.answers[id]||'';$('answerFeedback').textContent='';$('hintInput').value='';$('hintOutput').textContent='';
+ $('puzzleArea').innerHTML=id==='orientation'?orientationPuzzle():id==='essence'?essencePuzzle():id==='form'?formPuzzle():finalPuzzle();show('levelScene');
+ if(id==='orientation')$('inspectOrientation').onclick=()=>$('orientationMeta').classList.add('visible');
+ if(id==='essence'){let mirrored=false,rewound=false;$('mirrorButton').onclick=()=>{mirrored=true;$('mirrorText').textContent='SOLO YO'};$('rewindButton').onclick=()=>{rewound=true;$('mirrorText').textContent=$('mirrorText').textContent.split('').reverse().join('')};matrixStep=0;tempMatrixAnswers=[];renderMatrix();}
+ if(id==='form'){initJigsaw();$('rotatePiece').onclick=rotatePiece;$('flipPiece').onclick=flipPiece;$('shufflePuzzle').onclick=initJigsaw;}
+ if(id==='destination'){let route={};$('applyBook').onclick=()=>{if(!state.matrixComplete){$('bookResult').textContent='Falta un código de diez cifras.';return}$('bookResult').textContent=C.bookAnswer;state.bookComplete=true;save()};document.querySelectorAll('.route-options button').forEach(b=>b.onclick=()=>{route[b.dataset.kind]=b.dataset.value;$('dial'+b.dataset.kind[0].toUpperCase()+b.dataset.kind.slice(1)).innerHTML=b.dataset.kind.toUpperCase()+'<br>'+b.dataset.value;['mood','motion','place'].forEach(k=>$('dial'+k[0].toUpperCase()+k.slice(1)).classList.toggle('active',!!route[k]));if(route.mood&&route.motion&&route.place){state.routeComplete=true;save();$('routeResult').textContent='RUTA POSIBLE: '+route.mood+' · '+route.motion+' · '+route.place+'. No es una reserva. Es una promesa abierta.'}})}
 }
-function validateAnswer(){
-  return activeLevel.answers.map(decode).map(norm).includes(norm($('answerInput').value));
-}
-function revealLevel(){
-  if(!state.completed.includes(activeLevel.id)) state.completed.push(activeLevel.id);
-  state.answers[activeLevel.id]=$('answerInput').value; save();
-  const n=activeLevel.number;
-  $('revealTitle').textContent=n===1?'Primer vestigio recuperado':n===2?'Segundo vestigio recuperado':n===3?'Tercer vestigio recuperado':'Ruta abierta';
-  $('revealText').textContent=n===1?'El primer objeto es un iPhone 15 rosa. Guardará fotografías, voces, lugares y versiones de nosotros mismos.':n===2?'La segunda recuperación es Just Moi de Juicy Couture. Una esencia convertida en firma.':n===3?'Kiwi será reconstruido como una figura personalizada impresa en 3D, capa a capa.':'Nos iremos de viaje por Europa. La fecha, el lugar y la experiencia los elegiremos juntos.';
-  showScene('revealScene',false);
-}
-function renderBook(){
-  const pages=$('bookPages'); pages.innerHTML='';
-  C.levels.forEach(level=>{
-    const done=state.completed.includes(level.id);
-    const page=document.createElement('article'); page.className='book-page'+(done?'':' locked');
-    page.innerHTML=done?'<small>PÁGINA 0'+level.number+'</small><strong>'+level.fragment+'</strong><p>'+level.title+'. Fragmento conservado.</p>':'<small>PÁGINA 0'+level.number+'</small><strong>—</strong><p>Contenido fuera de rumbo.</p>';
-    if(done&&level.number===4){ const b=document.createElement('button'); b.className='secondary'; b.textContent='Abrir carta'; b.onclick=()=>showScene('letterScene',false); page.append(b); }
-    pages.append(page);
-  });
-}
-function renderOrganizer(){
-  $('organizerState').textContent=JSON.stringify(state,null,2);
-  const controls=$('organizerControls'); controls.innerHTML='';
-  C.levels.forEach(level=>{
-    const b=document.createElement('button'); b.className='secondary';
-    b.textContent=(state.completed.includes(level.id)?'Marcar pendiente ':'Completar ')+'Nivel '+level.number;
-    b.onclick=()=>{ state.completed=state.completed.includes(level.id)?state.completed.filter(x=>x!==level.id):[...state.completed,level.id]; save(); renderOrganizer(); renderHub(); };
-    controls.append(b);
-  });
-}
-
-$('answerForm').onsubmit=e=>{
-  e.preventDefault();
-  state.attempts[activeLevel.id]=(state.attempts[activeLevel.id]||0)+1;
-  state.answers[activeLevel.id]=$('answerInput').value; save();
-  if(validateAnswer()){ $('answerFeedback').textContent='La señal coincide.'; $('answerFeedback').className='feedback ok'; setTimeout(revealLevel,300); }
-  else { $('answerFeedback').textContent='La señal no coincide todavía. Revisa el expediente.'; $('answerFeedback').className='feedback bad'; }
-};
-$('hintButton').onclick=()=>{
-  const key=norm($('hintInput').value).replaceAll(' ','-');
-  const entry=Object.entries(activeLevel.hints).find(([code])=>norm(code).replaceAll(' ','-')===key);
-  $('hintOutput').textContent=entry?entry[1]:'Código no reconocido.';
-  if(entry){ state.hints[activeLevel.id]=[...new Set([...(state.hints[activeLevel.id]||[]),entry[0]])]; save(); }
-};
-$('bootContinue').onclick=()=>showScene('introScene',false);
-$('startButton').onclick=()=>{ state.started=true; save(); renderHub(); showScene('hubScene'); };
-$('backHub').onclick=()=>{ renderHub(); showScene('hubScene'); };
-$('continueButton').onclick=()=>{ renderHub(); showScene('hubScene'); };
-$('openBook').onclick=()=>{ renderBook(); showScene('bookScene'); };
-$('closeBook').onclick=()=>{ renderHub(); showScene('hubScene'); };
-$('closeLetter').onclick=()=>{ renderBook(); showScene('bookScene'); };
-$('soundToggle').onclick=()=>{ state.sound=!state.sound; $('soundToggle').textContent=state.sound?'●':'◌'; save(); };
-
-$('brand').onpointerdown=()=>holdTimer=setTimeout(()=>$('organizerDialog').showModal(),4000);
-$('brand').onpointerup=()=>clearTimeout(holdTimer);
-$('brand').onclick=()=>{ tapCount++; clearTimeout(tapReset); if(tapCount>=5){tapCount=0;$('organizerDialog').showModal();} tapReset=setTimeout(()=>tapCount=0,1600); };
-$('organizerEnter').onclick=()=>{
-  if($('organizerPassword').value===decode(C.meta.organizerPassword)){ $('organizerLogin').hidden=true; $('organizerPanel').hidden=false; renderOrganizer(); }
-  else $('organizerFeedback').textContent='Acceso no verificado.';
-};
-$('simulateAll').onclick=()=>{ state.started=true; state.completed=C.levels.map(l=>l.id); save(); renderOrganizer(); renderHub(); };
-$('resetProgress').onclick=()=>{ if(confirm('¿Reiniciar todo el progreso?')){ state=fresh(); save(); location.reload(); } };
-if(new URLSearchParams(location.search).get('organizer')==='true') $('organizerDialog').showModal();
-
-function particles(){
-  const canvas=$('ambient'),ctx=canvas.getContext('2d'); let particles=[];
-  function resize(){ canvas.width=innerWidth*devicePixelRatio; canvas.height=innerHeight*devicePixelRatio; canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px'; ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); particles=Array.from({length:44},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.3+.25,v:Math.random()*.16+.04,a:Math.random()*.32+.06}));}
-  function tick(){ctx.clearRect(0,0,innerWidth,innerHeight);particles.forEach(p=>{p.y+=p.v;if(p.y>innerHeight)p.y=-3;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(200,110,129,'+p.a+')';ctx.fill();});requestAnimationFrame(tick);}
-  resize();addEventListener('resize',resize);tick();
-}
-renderFooter(); renderHub(); particles();
-if(state.started) showScene('hubScene'); else { showScene('bootScene',false); runBoot(); }
+function valid(){return activeLevel.answers.map(dec).map(norm).includes(norm($('answerInput').value))}
+function revealLevel(){if(activeLevel.id==='essence'&&!state.matrixComplete){$('answerFeedback').textContent='La esencia está resuelta, pero el archivo exige completar las diez matrices.';$('answerFeedback').className='feedback bad';return}if(activeLevel.id==='form'&&!state.jigsawComplete){$('answerFeedback').textContent='El nombre coincide, pero la reconstrucción visual sigue incompleta.';$('answerFeedback').className='feedback bad';return}if(activeLevel.id==='destination'&&(!state.bookComplete||!state.routeComplete)){$('answerFeedback').textContent='La frase es correcta, pero la ruta todavía no ha sido construida.';$('answerFeedback').className='feedback bad';return}
+ if(!state.completed.includes(activeLevel.id))state.completed.push(activeLevel.id);state.answers[activeLevel.id]=$('answerInput').value;save();const n=activeLevel.number;$('revealTitle').textContent=n===1?'Primer vestigio recuperado':n===2?'Segundo vestigio recuperado':n===3?'Tercer vestigio recuperado':'Ruta abierta';$('revealText').textContent=n===1?'iPhone 15 rosa.':n===2?'Just Moi de Juicy Couture. El código de matrices seguirá siendo necesario.':n===3?'Una figura 3D personalizada de Kiwi.':'Una experiencia por Europa que decidiréis juntos.';show('revealScene',false)}
+function renderBook(){const box=$('bookPages');box.innerHTML='';C.levels.forEach(l=>{const done=state.completed.includes(l.id),p=document.createElement('article');p.className='book-page'+(done?'':' locked');p.innerHTML=done?'<small>PÁGINA 0'+l.number+'</small><strong>'+l.fragment+'</strong><p>'+l.title+'. Fragmento conservado.</p>':'<small>PÁGINA 0'+l.number+'</small><strong>—</strong><p>Contenido fuera de rumbo.</p>';if(done&&l.number===4){const b=document.createElement('button');b.className='secondary';b.textContent='Abrir carta';b.onclick=()=>show('letterScene',false);p.append(b)}box.append(p)})}
+$('answerForm').onsubmit=e=>{e.preventDefault();state.attempts[activeLevel.id]=(state.attempts[activeLevel.id]||0)+1;if(valid())revealLevel();else{$('answerFeedback').textContent='La señal no coincide. Revisa todas las capas del expediente.';$('answerFeedback').className='feedback bad'}save()}
+$('hintButton').onclick=()=>{const key=norm($('hintInput').value).replaceAll(' ','-'),entry=Object.entries(activeLevel.hints).find(([k])=>norm(k).replaceAll(' ','-')===key);$('hintOutput').textContent=entry?entry[1]:'Código no reconocido.'}
+$('bootContinue').onclick=()=>show('introScene',false);$('startButton').onclick=()=>{state.started=true;save();renderHub();show('hubScene')};$('backHub').onclick=()=>{renderHub();show('hubScene')};$('continueButton').onclick=()=>{renderHub();show('hubScene')};$('openBook').onclick=()=>{renderBook();show('bookScene')};$('closeBook').onclick=()=>{renderHub();show('hubScene')};$('closeLetter').onclick=()=>{renderBook();show('bookScene')};
+$('brand').onpointerdown=()=>holdTimer=setTimeout(()=>$('organizerDialog').showModal(),4000);$('brand').onpointerup=()=>clearTimeout(holdTimer);$('brand').onclick=()=>{tapCount++;clearTimeout(tapReset);if(tapCount>=5){tapCount=0;$('organizerDialog').showModal()}tapReset=setTimeout(()=>tapCount=0,1600)};
+$('organizerEnter').onclick=()=>{if($('organizerPassword').value===dec(C.meta.organizerPassword)){$('organizerLogin').hidden=true;$('organizerPanel').hidden=false;renderOrg()}else $('organizerFeedback').textContent='Acceso no verificado.'}
+function renderOrg(){$('organizerState').textContent=JSON.stringify(state,null,2);const box=$('organizerControls');box.innerHTML='';C.levels.forEach(l=>{const b=document.createElement('button');b.className='secondary';b.textContent=(state.completed.includes(l.id)?'Marcar pendiente ':'Completar ')+'Nivel '+l.number;b.onclick=()=>{state.completed=state.completed.includes(l.id)?state.completed.filter(x=>x!==l.id):[...state.completed,l.id];save();renderOrg();renderHub()};box.append(b)})}
+$('simulateAll').onclick=()=>{state.started=true;state.completed=C.levels.map(l=>l.id);state.matrixComplete=state.jigsawComplete=state.bookComplete=state.routeComplete=true;save();renderOrg();renderHub()};$('resetProgress').onclick=()=>{if(confirm('¿Reiniciar progreso?')){state=fresh();save();location.reload()}};
+function particles(){const c=$('ambient'),x=c.getContext('2d');let ps=[];function rs(){c.width=innerWidth*devicePixelRatio;c.height=innerHeight*devicePixelRatio;c.style.width=innerWidth+'px';c.style.height=innerHeight+'px';x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);ps=Array.from({length:42},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.2+.3,v:Math.random()*.15+.04,a:Math.random()*.3+.05}))}function t(){x.clearRect(0,0,innerWidth,innerHeight);ps.forEach(p=>{p.y+=p.v;if(p.y>innerHeight)p.y=-2;x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fillStyle='rgba(200,110,129,'+p.a+')';x.fill()});requestAnimationFrame(t)}rs();addEventListener('resize',rs);t()}
+save();renderHub();particles();if(state.started)show('hubScene');else{show('bootScene',false);boot()}
 })();
