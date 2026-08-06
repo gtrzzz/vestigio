@@ -1,1 +1,116 @@
-window.MatrixEngine=class{constructor({matrices,settings,onStateChange,onComplete}){this.matrices=matrices;this.settings=settings;this.state=MatrixStorage.load();this.selected=null;this.timerId=null;this.onStateChange=onStateChange||(()=>{});this.onComplete=onComplete||(()=>{})}start(){if(!this.state.started){this.state.started=true;this.state.currentStartedAt=Date.now();MatrixStorage.save(this.state)}this.runTimer();this.emit()}resume(){if(!this.state.currentStartedAt)this.state.currentStartedAt=Date.now();this.runTimer();this.emit()}pause(){this.accumulateTime();clearInterval(this.timerId);this.timerId=null;MatrixStorage.save(this.state);this.emit()}accumulateTime(){if(this.state.currentStartedAt){this.state.totalElapsed+=Math.floor((Date.now()-this.state.currentStartedAt)/1000);this.state.currentStartedAt=null}}runTimer(){clearInterval(this.timerId);if(!this.state.currentStartedAt)this.state.currentStartedAt=Date.now();this.timerId=setInterval(()=>this.emit(),1000)}elapsed(){return this.state.totalElapsed+(this.state.currentStartedAt?Math.floor((Date.now()-this.state.currentStartedAt)/1000):0)}current(){return this.matrices[this.state.currentIndex]}select(index){this.selected=index;this.emit()}confirm(){if(this.selected===null)return{ok:false,reason:'empty'};const matrix=this.current();this.state.attempts++;const isCorrect=this.selected===matrix.correct;if(!isCorrect){MatrixStorage.save(this.state);this.emit();return{ok:false,reason:'incorrect'}}const elapsedForQuestion=Math.max(1,Math.floor((Date.now()-this.state.currentStartedAt)/1000));let points=0;if(elapsedForQuestion<=this.settings.timeBonus.gold)points=this.settings.points.gold;else if(elapsedForQuestion<=this.settings.timeBonus.silver)points=this.settings.points.silver;this.state.score+=points;this.state.answers.push({id:matrix.id,selected:this.selected,correct:true,elapsed:elapsedForQuestion,points,symbol:matrix.symbol});this.state.currentIndex++;this.selected=null;this.state.totalElapsed+=elapsedForQuestion;this.state.currentStartedAt=Date.now();if(this.state.currentIndex>=this.matrices.length){this.state.completed=true;this.state.finishedAt=new Date().toISOString();this.pause();MatrixStorage.save(this.state);this.onComplete(this.state);return{ok:true,completed:true}}MatrixStorage.save(this.state);this.emit();return{ok:true,completed:false}}skip(){const matrix=this.current();this.state.answers.push({id:matrix.id,selected:null,correct:false,elapsed:0,points:0,symbol:matrix.symbol});this.state.currentIndex++;this.selected=null;if(this.state.currentIndex>=this.matrices.length){this.state.completed=true;this.pause();this.onComplete(this.state)}MatrixStorage.save(this.state);this.emit()}solveCurrent(){this.selected=this.current().correct;return this.confirm()}reset(){clearInterval(this.timerId);this.state=MatrixStorage.reset();this.selected=null;this.emit()}export(){const blob=new Blob([JSON.stringify(this.state,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='vestigio-matrices-resultado.json';a.click();URL.revokeObjectURL(url)}emit(){this.onStateChange(this.state,this)}};
+/**
+ * VESTIGIO - Matrix Engine
+ * Motor completo de matrices WAIS-like
+ * Genera secuencia de respuestas para cifrado de libro
+ */
+
+class MatrixEngine {
+  constructor(matrices = []) {
+    this.matrices = matrices;
+    this.currentIndex = 0;
+    this.answers = [];
+    this.startTime = null;
+    this.state = 'ready';
+    this.timerInterval = null;
+  }
+
+  init() {
+    this.currentIndex = 0;
+    this.answers = [];
+    this.startTime = Date.now();
+    this.state = 'playing';
+    this.resumeTimer();
+  }
+
+  getCurrentMatrix() {
+    return this.currentIndex < this.matrices.length ? this.matrices[this.currentIndex] : null;
+  }
+
+  submitAnswer(optionIndex) {
+    const matrix = this.getCurrentMatrix();
+    if (!matrix) return false;
+
+    const isCorrect = optionIndex === matrix.correct;
+    this.answers.push({
+      matrixId: matrix.id,
+      selectedIndex: optionIndex,
+      correct: isCorrect,
+      timestamp: Date.now() - this.startTime
+    });
+
+    this.currentIndex++;
+
+    if (this.currentIndex >= this.matrices.length) {
+      this.state = 'completed';
+      this.stopTimer();
+      return { completed: true, sequence: this.generateSequence() };
+    }
+
+    return { completed: false, nextMatrix: this.getCurrentMatrix() };
+  }
+
+  generateSequence() {
+    return this.answers.map(a => (a.correct ? a.selectedIndex + 1 : 0)).join('');
+  }
+
+  getProgress() {
+    return {
+      current: this.currentIndex + 1,
+      total: this.matrices.length,
+      percentage: Math.round((this.currentIndex / this.matrices.length) * 100)
+    };
+  }
+
+  getStats() {
+    const correct = this.answers.filter(a => a.correct).length;
+    const incorrect = this.answers.length - correct;
+    const elapsed = this.startTime ? Date.now() - this.startTime : 0;
+
+    return {
+      correct,
+      incorrect,
+      accuracy: this.answers.length > 0 ? (correct / this.answers.length * 100).toFixed(1) : 0,
+      timeElapsed: this.formatTime(elapsed),
+      sequence: this.generateSequence()
+    };
+  }
+
+  resumeTimer() {
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    this.timerInterval = setInterval(() => {
+      if (this.state === 'playing') {
+        window.dispatchEvent(new CustomEvent('matrixTimer', {
+          detail: { elapsed: this.formatTime(Date.now() - this.startTime) }
+        }));
+      }
+    }, 1000);
+  }
+
+  stopTimer() {
+    if (this.timerInterval) clearInterval(this.timerInterval);
+  }
+
+  formatTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  canResumeProgress() {
+    return this.currentIndex > 0 && this.currentIndex < this.matrices.length;
+  }
+
+  reset() {
+    this.currentIndex = 0;
+    this.answers = [];
+    this.state = 'ready';
+    this.stopTimer();
+  }
+
+  destroy() {
+    this.stopTimer();
+  }
+}
+
+window.MatrixEngine = MatrixEngine;

@@ -1,4 +1,111 @@
-window.MatrixRenderer=(()=>{const ns='http://www.w3.org/2000/svg';function svgEl(name,attrs={}){const e=document.createElementNS(ns,name);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));return e}function line(svg,x1,y1,x2,y2,w=7){svg.append(svgEl('line',{x1,y1,x2,y2,'stroke-width':w,stroke:'currentColor','stroke-linecap':'round'}))}function shapeToSVG(spec){const svg=svgEl('svg',{viewBox:'0 0 100 100',fill:'none',stroke:'currentColor','stroke-width':'7','stroke-linecap':'round','stroke-linejoin':'round'});const addBasic=(shape,filled=false)=>{if(shape==='circle')svg.append(svgEl('circle',{cx:50,cy:50,r:27,fill:filled?'currentColor':'none'}));else if(shape==='square')svg.append(svgEl('rect',{x:24,y:24,width:52,height:52,fill:filled?'currentColor':'none'}));else if(shape==='triangle')svg.append(svgEl('path',{d:'M50 17L82 78H18Z',fill:filled?'currentColor':'none'}));else if(shape==='diamond')svg.append(svgEl('path',{d:'M50 15L85 50L50 85L15 50Z',fill:filled?'currentColor':'none'}));};
-const s=spec.shape;if(s==='arrow'){line(svg,20,50,76,50);line(svg,60,34,76,50);line(svg,60,66,76,50);svg.style.transform=`rotate(${spec.rotation||0}deg)`}else if(s==='dots'||s==='squares'||s==='lines'){const c=spec.count||1;for(let i=0;i<c;i++){const x=20+(60/(Math.max(c-1,1)))*i;if(s==='dots')svg.append(svgEl('circle',{cx:x,cy:50,r:6,fill:'currentColor'}));else if(s==='squares')svg.append(svgEl('rect',{x:x-6,y:44,width:12,height:12,fill:'currentColor'}));else line(svg,x,28,x,72,5)}}else if(['circle','square','triangle','diamond'].includes(s))addBasic(s,!!spec.filled);else if(s==='lineH')line(svg,18,50,82,50);else if(s==='lineV')line(svg,50,18,50,82);else if(s==='plus'){line(svg,18,50,82,50);line(svg,50,18,50,82)}else if(s==='diagA')line(svg,20,80,80,20);else if(s==='diagB')line(svg,20,20,80,80);else if(s==='x'){line(svg,20,20,80,80);line(svg,20,80,80,20)}else if(s==='dot')svg.append(svgEl('circle',{cx:50,cy:50,r:8,fill:'currentColor'}));else if(s==='circleDot'){addBasic('circle');svg.append(svgEl('circle',{cx:50,cy:50,r:7,fill:'currentColor'}))}else if(s==='ring'){svg.append(svgEl('circle',{cx:50,cy:50,r:29}));svg.append(svgEl('circle',{cx:50,cy:50,r:13}))}else if(s==='combo'){(spec.parts||[]).forEach(p=>{const nested=shapeToSVG({shape:p});Array.from(nested.childNodes).forEach(n=>svg.append(n.cloneNode(true)))})}else if(s==='boxDot'){svg.append(svgEl('rect',{x:18,y:18,width:64,height:64}));const pos={tl:[30,30],tc:[50,30],tr:[70,30],ml:[30,50],mc:[50,50],mr:[70,50],bl:[30,70],bc:[50,70],br:[70,70]}[spec.pos]||[50,50];svg.append(svgEl('circle',{cx:pos[0],cy:pos[1],r:7,fill:'currentColor'}))}else if(s==='doubleArrow'){const g1=svgEl('g',{transform:`rotate(${spec.a||0} 50 50)`});g1.append(svgEl('line',{x1:18,y1:36,x2:72,y2:36}));g1.append(svgEl('path',{d:'M58 22L74 36L58 50'}));svg.append(g1);const g2=svgEl('g',{transform:`rotate(${spec.b||0} 50 50)`});g2.append(svgEl('line',{x1:28,y1:64,x2:82,y2:64}));g2.append(svgEl('path',{d:'M42 50L26 64L42 78'}));svg.append(g2)}else if(s==='spokes'){const count=spec.count||1;for(let i=0;i<count;i++){const a=(360/count)*i+(spec.rotation||0),rad=a*Math.PI/180;line(svg,50,50,50+Math.cos(rad)*30,50+Math.sin(rad)*30,5)}svg.append(svgEl('circle',{cx:50,cy:50,r:6,fill:'currentColor'}))}else if(s==='corner'){svg.append(svgEl('rect',{x:15,y:15,width:70,height:70}));const p={tl:[28,28],tr:[72,28],br:[72,72],bl:[28,72]}[spec.corner]||[28,28];if(spec.inner==='circle')svg.append(svgEl('circle',{cx:p[0],cy:p[1],r:10,fill:spec.filled?'currentColor':'none'}));else if(spec.inner==='square')svg.append(svgEl('rect',{x:p[0]-10,y:p[1]-10,width:20,height:20,fill:spec.filled?'currentColor':'none'}));else svg.append(svgEl('path',{d:`M${p[0]} ${p[1]-12}L${p[0]+12} ${p[1]+10}H${p[0]-12}Z`,fill:spec.filled?'currentColor':'none'}))}
-return svg}
-function renderGrid(container,matrix){container.innerHTML='';matrix.grid.forEach(spec=>{const cell=document.createElement('div');cell.className='matrix-cell'+(spec?'':' missing');cell.append(spec?shapeToSVG(spec):document.createTextNode('?'));container.append(cell)})}function renderOptions(container,matrix,selected,onSelect){container.innerHTML='';matrix.options.forEach((spec,i)=>{const b=document.createElement('button');b.type='button';b.className='matrix-option'+(selected===i?' selected':'');b.dataset.index=i;b.append(shapeToSVG(spec));b.addEventListener('click',()=>onSelect(i));container.append(b)})}return{renderGrid,renderOptions,shapeToSVG}})();
+/**
+ * VESTIGIO - Matrix Renderer
+ * Renderiza matrices WAIS en SVG
+ */
+
+class MatrixRenderer {
+  static shapes = {
+    circle: (x, y, size) => 
+      `<circle cx="${x}" cy="${y}" r="${size/2}" fill="currentColor" opacity="0.8"/>`,
+    
+    square: (x, y, size) =>
+      `<rect x="${x-size/2}" y="${y-size/2}" width="${size}" height="${size}" fill="currentColor" opacity="0.8" rx="2"/>`,
+    
+    triangle: (x, y, size) =>
+      `<polygon points="${x},${y-size/2} ${x+size/2},${y+size/2} ${x-size/2},${y+size/2}" fill="currentColor" opacity="0.8"/>`,
+    
+    diamond: (x, y, size) =>
+      `<polygon points="${x},${y-size/2} ${x+size/2},${y} ${x},${y+size/2} ${x-size/2},${y}" fill="currentColor" opacity="0.8"/>`,
+    
+    arrow: (x, y, size) =>
+      `<polygon points="${x},${y-size/2} ${x+size/3},${y} ${x+size/6},${y} ${x+size/6},${y+size/2} ${x-size/6},${y+size/2} ${x-size/6},${y} ${x-size/3},${y}" fill="currentColor" opacity="0.8"/>`,
+    
+    line: (x, y, size) =>
+      `<line x1="${x-size/2}" y1="${y}" x2="${x+size/2}" y2="${y}" stroke="currentColor" stroke-width="2" opacity="0.8"/>`,
+    
+    dots: (x, y, size, count = 3) => {
+      const dots = [];
+      const radius = size / (count + 1);
+      const dotSize = radius * 0.4;
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2;
+        const px = x + Math.cos(angle) * radius;
+        const py = y + Math.sin(angle) * radius;
+        dots.push(`<circle cx="${px}" cy="${py}" r="${dotSize}" fill="currentColor" opacity="0.8"/>`);
+      }
+      return dots.join('');
+    }
+  };
+
+  static renderGrid(matrix, options = {}) {
+    const cellSize = options.cellSize || 100;
+    const padding = options.padding || 10;
+    const cols = 3;
+    const rows = 3;
+    const width = cols * cellSize + padding * 2;
+    const height = rows * cellSize + padding * 2;
+
+    let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="matrix-svg">`;
+    svg += `<style>.matrix-svg { color: inherit; }</style>`;
+
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const x = j * cellSize + cellSize / 2 + padding;
+        const y = i * cellSize + cellSize / 2 + padding;
+        const index = i * cols + j;
+        const item = matrix.grid[index];
+
+        // Bordes de celda
+        svg += `<rect x="${j * cellSize + padding}" y="${i * cellSize + padding}" width="${cellSize}" height="${cellSize}" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/>`;
+
+        // Renderizar contenido
+        if (item === null) {
+          svg += `<text x="${x}" y="${y + 5}" text-anchor="middle" font-size="24" opacity="0.3">?</text>`;
+        } else {
+          svg += this.renderShape(item, x, y, cellSize * 0.6);
+        }
+      }
+    }
+
+    svg += `</svg>`;
+    return svg;
+  }
+
+  static renderShape(item, x, y, size) {
+    if (!item) return '';
+
+    let result = '';
+    
+    if (item.shape === 'dots') {
+      result = this.shapes.dots(x, y, size, item.count || 3);
+    } else if (this.shapes[item.shape]) {
+      result = this.shapes[item.shape](x, y, size);
+    }
+
+    if (item.rotation && item.rotation !== 0) {
+      result = `<g transform="rotate(${item.rotation} ${x} ${y})">${result}</g>`;
+    }
+
+    return result;
+  }
+
+  static renderOptions(options, selectedIndex = -1, cellSize = 80) {
+    let html = '';
+    for (let i = 0; i < options.length; i++) {
+      const option = options[i];
+      const isSelected = i === selectedIndex;
+      const svg = `<svg width="${cellSize}" height="${cellSize}" viewBox="0 0 ${cellSize} ${cellSize}" class="option-svg">
+        <rect width="${cellSize}" height="${cellSize}" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2" rx="4"/>
+        ${this.renderShape(option, cellSize / 2, cellSize / 2, cellSize * 0.5)}
+      </svg>`;
+
+      html += `<button class="matrix-option ${isSelected ? 'selected' : ''}" data-index="${i}" title="Opción ${i + 1}">
+        ${svg}
+        <span class="option-label">${i + 1}</span>
+      </button>`;
+    }
+    return html;
+  }
+}
+
+window.MatrixRenderer = MatrixRenderer;
