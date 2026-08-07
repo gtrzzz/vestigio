@@ -1,92 +1,95 @@
 window.VESTIGIO_CONFIG = {
   "meta": {
-    "version": "0.2.0",
+    "version": "1.2.0",
     "entity": "VESTIGIO",
     "player": "Ania",
-    "storageKey": "vestigio_delivery_2_v1",
-    "organizerPassword": "MjgwNjI1"
+    "organizerPassword": "MjgwNjI1",
+    "storageKey": "vestigio_arg_advanced_v1"
   },
-  "level1": {
-    "acceptedFinal": [
-      "DESVIO",
-      "EL DESVIO",
-      "QUINCE GRADOS",
-      "15 GRADOS"
-    ],
-    "acceptedCipher": [
-      "ROSA NO ES EL FINAL"
-    ],
-    "hintCodes": {
-      "VTG-103A": "Empieza por los metadatos. No todas las fotografías pertenecen al mismo registro.",
-      "VTG-103B": "La fotografía 04 señala la tercera línea. Esa línea usa un César de tres posiciones.",
-      "VTG-103C": "Tras descifrar «ROSA NO ES EL FINAL», ajusta la aguja a 15°. La clave final describe lo que le ocurrió al rumbo."
-    }
-  },
-  "evidence": [
+  "matrixCode": "2413142312",
+  "bookCoordinates": [
+    "2-4",
+    "1-3",
+    "1-4",
+    "2-3",
+    "1-2"
+  ],
+  "bookLines": [
+    ["BRUMA", "NOMBRARLA", "LA", "EXPERIENCIA"],
+    ["LATIDO", "CENIZA", "SIN", "ABRE"],
+    ["NIEVE", "PULSO", "UMBRAL", "HOGAR"],
+    ["VIENTO", "ALTURA", "SECRETO", "MEMORIA"]
+  ],
+  "bookAnswer": "ABRE LA EXPERIENCIA SIN NOMBRARLA",
+  "levels": [
     {
-      "id": "ev1",
-      "title": "Archivo parcial",
-      "image": "./assets/photos/evidence-01.jpg",
-      "meta": {
-        "registro": "V-01",
-        "marca": "06:14",
-        "orientación": "0°",
-        "nota": "sin anomalías"
+      "id": "orientation",
+      "number": 1,
+      "title": "Orientación",
+      "subtitle": "Nada apunta donde debería.",
+      "answers": [
+        "REVTVklP",
+        "RUwgREVTVklP",
+        "MTUgR1JBRE9T",
+        "UVVJTkNFIEdSQURPUw=="
+      ],
+      "fragment": "15",
+      "hints": {
+        "VTG-103A": "Empieza por la tercera línea y no intentes interpretar todavía la fotografía.",
+        "VTG-103B": "La tercera línea usa César -3. El resultado indica qué dato visual debes conservar.",
+        "VTG-103C": "La brújula está alterada quince grados. La respuesta final es DESVÍO."
       }
     },
     {
-      "id": "ev2",
-      "title": "Lectura de campo",
-      "image": "./assets/photos/evidence-02.jpg",
-      "meta": {
-        "registro": "V-01",
-        "marca": "06:17",
-        "orientación": "N",
-        "nota": "lectura incompleta"
+      "id": "essence",
+      "number": 2,
+      "title": "Esencia",
+      "subtitle": "Lo importante nunca se dice directamente.",
+      "answers": [
+        "U09MTyBZTw==",
+        "SlVTVCBNT0k=",
+        "SlVTVEUgTU9J"
+      ],
+      "fragment": "YO",
+      "hints": {
+        "VTG-214A": "Los documentos no dan iniciales: dan operaciones. Mira qué se repite, qué vuelve y qué queda cuando inviertes el orden.",
+        "VTG-214B": "Después de resolver la esencia, completa las diez matrices. Hay seis opciones, pero solo algunas posiciones se conservarán.",
+        "VTG-214C": "La secuencia correcta es un código de diez cifras. No es una respuesta: son coordenadas para un libro."
       }
     },
     {
-      "id": "ev3",
-      "title": "Sello incompleto",
-      "image": "./assets/photos/evidence-03.jpg",
-      "meta": {
-        "registro": "V-02",
-        "marca": "06:21",
-        "orientación": "—",
-        "nota": "no pertenece al conjunto"
+      "id": "form",
+      "number": 3,
+      "title": "Forma",
+      "subtitle": "Reconstruye lo que solo tú conoces.",
+      "answers": [
+        "S0lXSQ==",
+        "UE9ERU5DTyBNQU5FVE8=",
+        "TUFORVRP",
+        "TUkgUEVSUk8="
+      ],
+      "fragment": "CAPA",
+      "hints": {
+        "VTG-327A": "Cada pieza tiene posición, giro y cara correctos. Toca dos piezas para intercambiarlas.",
+        "VTG-327B": "Selecciona una pieza y usa GIRAR o VOLTEAR. La imagen debe quedar completa y ninguna pieza puede mostrar el reverso.",
+        "VTG-327C": "Cuando la fotografía quede reconstruida, aparecerán marcas. El nombre abre el nivel, pero el código será necesario después."
       }
     },
     {
-      "id": "ev4",
-      "title": "Registro angular",
-      "image": "./assets/photos/evidence-04.jpg",
-      "meta": {
-        "registro": "V-01",
-        "marca": "06:15",
-        "orientación": "+15°",
-        "nota": "conservar tercera línea"
-      }
-    },
-    {
-      "id": "ev5",
-      "title": "Nota sin firma",
-      "image": "./assets/photos/evidence-05.jpg",
-      "meta": {
-        "registro": "V-03",
-        "marca": "—",
-        "orientación": "—",
-        "nota": "papel posterior"
-      }
-    },
-    {
-      "id": "ev6",
-      "title": "Negativo deteriorado",
-      "image": "./assets/photos/evidence-06.jpg",
-      "meta": {
-        "registro": "V-01",
-        "marca": "06:19",
-        "orientación": "invertida",
-        "nota": "sin lectura estable"
+      "id": "destination",
+      "number": 4,
+      "title": "Umbral",
+      "subtitle": "Lo que espera todavía no necesita nombre.",
+      "answers": [
+        "QUJSRSBMQSBFWFBFUklFTkNJQSBTSU4gTk9NQlJBUkxB",
+        "QUJSRSBMQSBFWFBFUklFTkNJQQ==",
+        "RVhQRVJJRU5DSUEgU0lOIE5PTUJSRQ=="
+      ],
+      "fragment": "RECUERDO",
+      "hints": {
+        "VTG-441A": "La puerta 217 no señala un lugar. Señala la forma de entrar en el próximo recuerdo.",
+        "VTG-441B": "Agrupa el código de matrices en parejas: línea-palabra. El libro elegirá por ti.",
+        "VTG-441C": "El libro revela ABRE LA EXPERIENCIA SIN NOMBRARLA. Después construye tres condiciones, no un lugar."
       }
     }
   ]

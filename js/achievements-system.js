@@ -109,7 +109,7 @@ class AchievementsSystem {
         id: 'level4_complete',
         level: 4,
         title: 'Transformación',
-        message: 'Tu viaje ha llegado al destino...',
+        message: 'Has abierto una experiencia sin nombrarla...',
         reward: 'final_revelation'
       }
     ];
@@ -124,7 +124,7 @@ class AchievementsSystem {
       {
         id: 'secret_symbol',
         title: 'El Símbolo Perdido',
-        hint: 'Busca en las coordenadas 36.8, -3.6',
+        hint: 'Busca la marca que no parece una pista',
         reward: 'true_ending'
       },
       {

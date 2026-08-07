@@ -63,7 +63,7 @@ const CuadernoPages = [
   // Página 8
   {
     id: 8,
-    title: "El Destino",
+    title: "El Umbral",
     words: ["No", "es", "un", "lugar", "sino", "un", "momento", "Una", "experiencia", "completa"],
     content: "No es un lugar sino un momento. Una experiencia completa que te transformará.",
     symbols: ["❖", "❉"]
@@ -96,8 +96,8 @@ const CuadernoPages = [
   {
     id: 12,
     title: "El Final",
-    words: ["Para", "Ania", "con", "amor", "Que", "este", "viaje", "ilumine", "tu", "camino"],
-    content: "Para Ania con amor. Que este viaje ilumine tu camino hacia el infinito.",
+    words: ["Para", "Ania", "con", "amor", "Que", "esta", "deriva", "ilumine", "tu", "camino"],
+    content: "Para Ania con amor. Que esta deriva ilumine tu camino hacia el infinito.",
     symbols: ["❋", "◆"]
   }
 ];

@@ -76,23 +76,22 @@ window.EXPERIENCE_CONFIG = Object.freeze({
     {
       id: "destination",
       number: 4,
-      title: "Destino",
-      subtitle: "Una ruta todavía abierta",
-      narrative: "La última coordenada aún no existe.",
-      acceptedAnswersEncoded: ['TlVFU1RSTyBQUk9YSU1PIFJFQ1VFUkRP', 'UlVUQSBBQklFUlRB', 'RVVST1BB'],
+      title: "Umbral",
+      subtitle: "Una experiencia todavía sin nombre",
+      narrative: "La última puerta no apunta a un mapa.",
+      acceptedAnswersEncoded: ['QUJSRSBMQSBFWFBFUklFTkNJQSBTSU4gTk9NQlJBUkxB', 'QUJSRSBMQSBFWFBFUklFTkNJQQ==', 'RVhQRVJJRU5DSUEgU0lOIE5PTUJSRQ=='],
       hintCodes: {
-        "DESTINO-RUMBO": "Los fragmentos anteriores tienen una segunda función.",
-        "DESTINO-CUADERNO": "Revisa las páginas ya recuperadas del Cuaderno de la Deriva.",
-        "DESTINO-CLAVE": "La respuesta describe un recuerdo futuro que crearéis juntos."
+        "UMBRAL-RUMBO": "Los fragmentos anteriores tienen una segunda función.",
+        "UMBRAL-CUADERNO": "Revisa las páginas ya recuperadas del Cuaderno de la Deriva.",
+        "UMBRAL-CLAVE": "La respuesta abre una experiencia, pero no la nombra."
       },
-      revealTitle: "Ruta abierta",
-      revealMessage: "Nos iremos de viaje por Europa. Todavía no hay fecha ni destino porque esa parte la elegiremos juntos. Puede convertirse en aventura, conducción, montaña, nieve o una escapada rural.",
-      finalFragment: "DESTINO",
+      revealTitle: "El umbral se abre",
+      revealMessage: "Existe una experiencia real esperando. No tiene nombre en esta pantalla: solo condiciones, promesa y una puerta abierta.",
+      finalFragment: "RECUERDO",
       configurableGift: {
-        region: "Europa",
-        destination: null,
+        experienceName: null,
         dates: null,
-        options: ["Experiencia de quads", "Experiencia de karts", "Escapada rural", "Suiza", "Noruega", "Andorra"]
+        options: ["Naturaleza", "Nieve", "Conducción", "Aventura", "Altura", "Calma"]
       }
     }
   ]

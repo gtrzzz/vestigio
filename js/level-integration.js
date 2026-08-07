@@ -19,7 +19,7 @@ class LevelIntegrationSystem {
       duration: '20-30 minutos',
       requiredKey: null,
       unlocksKey: 'DESVIO',
-      narrative: 'El viaje comienza con una pregunta simple: ¿hacia dónde te diriges?',
+      narrative: 'La deriva comienza con una pregunta simple: ¿hacia dónde te diriges?',
       assets: {
         image: 'assets/images/compass-rose.svg',
         audio: 'assets/audio/level1-ambient.mp3'
@@ -94,12 +94,12 @@ class LevelIntegrationSystem {
     this.levels[4] = {
       id: 4,
       name: 'La Experiencia',
-      description: 'No es un destino. Es una verdad. Algo que te espera en algún lugar blanco, frío y magnifico.',
+      description: 'No es un lugar. Es una verdad. Algo real espera detrás de una puerta que aún no debe nombrarse.',
       duration: '15-20 minutos',
       requiredKey: puzzleCodeFromLevel3,
       unlocksKey: 'FINAL_REVELATION',
       narrative: `Te has preparado para esto. Cada nivel te ha traído más cerca.
-      Ahora sabes quién eres. Ahora necesitas ir donde tu verdadero ser puede florecer.`,
+      Ahora sabes quién eres. Ahora solo falta cruzar una experiencia que no cabe en una coordenada.`,
       assets: {
         image: 'assets/images/mountains-final.svg',
         audio: 'assets/audio/level4-ambient.mp3',
@@ -154,8 +154,8 @@ class LevelIntegrationSystem {
    */
   generateFinalMessage(puzzleCode) {
     return {
-      title: 'El Lugar Existe',
-      content: `Tu viaje te ha llevado aquí por una razón.
+      title: 'La Puerta Existe',
+      content: `Tu deriva te ha llevado aquí por una razón.
       
       Cada nivel fue un espejo de tu propia transformación.
       La brújula te enseñó hacia dónde vas.
@@ -164,20 +164,15 @@ class LevelIntegrationSystem {
       
       Ahora es momento de vivir la experiencia.
       
-      Te espera en las montañas blancas.
-      Donde la nieve susurra historias antiguas.
-      Donde Kiwi corre libremente.
-      Donde tú finalmente te encuentras a ti mismo.
+      No voy a escribir su nombre aquí.
+      Solo diré que tiene aire, movimiento, paisaje y una forma de silencio que todavía no conoces.
+      Kiwi forma parte de la señal.
+      Tú formas parte del motivo.
       
       Este es tu VESTIGIO.
       La huella de quién fuiste.
       El camino hacia quien serás.`,
-      coordinates: {
-        latitude: 36.8,
-        longitude: -3.6,
-        elevation: 3478,
-        place: 'Mulhacén, Sierra Nevada'
-      }
+      conditions: ['aire', 'movimiento', 'naturaleza', 'secreto']
     };
   }
 
