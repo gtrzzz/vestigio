@@ -43,9 +43,9 @@ window.EXPERIENCE_CONFIG = Object.freeze({
       narrative: "Hay cosas que ocupan un recuerdo antes que un lugar.",
       acceptedAnswersEncoded: ['U09MTyBZTw==', 'SlVTVCBNT0k=', 'SlVTVEUgTU9J', 'U09MT1lP'],
       hintCodes: {
-        "ESENCIA-AIRE": "El texto no solo importa por lo que dice, sino por cómo empieza.",
-        "ESENCIA-INICIO": "Observa la primera letra de cada línea.",
-        "ESENCIA-CLAVE": "Las letras iniciales forman la expresión «SOLO YO»."
+        "ESENCIA-AIRE": "Lo que permanece en la lámina está partido en dos pasillos.",
+        "ESENCIA-INICIO": "Entre los pasillos se lee alternando la mirada.",
+        "ESENCIA-CLAVE": "Tras alternar, la cinta está al revés: empieza donde terminó."
       },
       revealTitle: "Segundo vestigio recuperado",
       revealMessage: "Una esencia no sirve para ocultar quién eres. Sirve para dejar una parte de ti allí donde estuviste. El regalo es Just Moi de Juicy Couture.",
