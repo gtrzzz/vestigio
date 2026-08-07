@@ -14,15 +14,15 @@ function renderHub(){const n=state.completed.length;$('fragmentCount').textConte
 
 const matrices=[
  {a:'dot1',b:'dot2',c:'dot3',d:'line1',e:'line2',f:'line3',g:'tri1',h:'tri2',correct:2},
- {a:'sq1',b:'sq2',c:'sq3',d:'sq2',e:'sq3',f:'sq4',g:'sq3',h:'sq4',correct:4},
- {a:'triUp',b:'triRight',c:'triDown',d:'triRight',e:'triDown',f:'triLeft',g:'triDown',h:'triLeft',correct:1},
+ {a:'triUp',b:'triRight',c:'triDown',d:'triRight',e:'triDown',f:'triLeft',g:'triDown',h:'triLeft',correct:4},
+ {a:'sq1',b:'sq2',c:'sq3',d:'sq2',e:'sq3',f:'sq4',g:'sq3',h:'sq4',correct:1},
  {a:'circle1',b:'circle2',c:'circle3',d:'cross1',e:'cross2',f:'cross3',g:'diamond1',h:'diamond2',correct:3},
  {a:'bar1',b:'bar2',c:'bar3',d:'bar2',e:'bar3',f:'bar4',g:'bar3',h:'bar4',correct:1},
- {a:'moon1',b:'moon2',c:'moon3',d:'moon2',e:'moon3',f:'moon4',g:'moon3',h:'moon4',correct:4},
+ {a:'arrow1',b:'arrow2',c:'arrow3',d:'arrow2',e:'arrow3',f:'arrow4',g:'arrow3',h:'arrow4',correct:4},
  {a:'pair1',b:'pair2',c:'pair3',d:'pair2',e:'pair3',f:'pair4',g:'pair3',h:'pair4',correct:2},
  {a:'diag1',b:'diag2',c:'diag3',d:'diag2',e:'diag3',f:'diag4',g:'diag3',h:'diag4',correct:3},
  {a:'ring1',b:'ring2',c:'ring3',d:'ring2',e:'ring3',f:'ring4',g:'ring3',h:'ring4',correct:1},
- {a:'arrow1',b:'arrow2',c:'arrow3',d:'arrow2',e:'arrow3',f:'arrow4',g:'arrow3',h:'arrow4',correct:2}
+ {a:'dot1',b:'line1',c:'bar1',d:'dot2',e:'line2',f:'bar2',g:'dot3',h:'line3',correct:2}
 ];
 function symbolSVG(type){
  const common='viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"';
@@ -45,7 +45,7 @@ function symbolSVG(type){
  return '<svg '+common+'>'+ (map[type]||map.dot1) +'</svg>';
 }
 function matrixHTML(){
- return '<div class="matrix-shell"><div class="matrix-header"><div><small>PRUEBA DE PATRONES // 214-M</small><h3>Diez matrices incompletas</h3></div><strong id="matrixIndex">1 / 10</strong></div><p class="muted">Cada tablero oculta una regla distinta: progresión, rotación, simetría o acumulación. Elige una de seis piezas. El número de cada opción se conserva.</p><div id="matrixBoard"></div><div id="matrixCodeBox"></div></div>';
+ return '<div class="matrix-shell"><div class="matrix-header"><div><small>PRUEBA DE PATRONES // 214-M</small><h3>Diez matrices incompletas</h3></div><strong id="matrixIndex">1 / 10</strong></div><p class="muted">Cada tablero oculta una regla distinta: progresión, rotación, ciclo o acumulación. Elige una de seis piezas. El número de cada opción se conserva.</p><div id="matrixBoard"></div><div id="matrixCodeBox"></div></div>';
 }
 let matrixStep=0,tempMatrixAnswers=[];
 function renderMatrix(){
@@ -57,8 +57,7 @@ function renderMatrix(){
 }
 function optionSymbol(m,n){
  const pools=[
-  ['tri3','tri1','tri2','circle1','line3','diamond1'],['sq1','sq2','sq3','sq4','ring2','cross2'],['triUp','triRight','triDown','triLeft','arrow2','diamond2'],['diamond1','diamond2','diamond3','cross3','circle3','sq4'],
-  ['bar4','bar1','bar2','bar3','line2','diag2'],['moon1','moon2','moon3','moon4','ring1','circle2'],['pair1','pair2','pair3','pair4','sq2','ring3'],['diag1','diag2','diag3','diag4','arrow3','line3'],['ring4','ring1','ring2','ring3','circle1','diamond3'],['arrow1','arrow4','arrow3','arrow2','triRight','diag4']
+  ['tri1','tri3','tri2','dot2','circle3','bar2'],['triRight','triDown','triLeft','triUp','arrow2','diamond2'],['sq1','sq2','sq3','sq4','ring2','cross2'],['diamond1','diamond2','diamond3','cross3','circle3','sq4'],['bar1','bar2','bar3','bar4','line2','diag2'],['arrow2','arrow3','arrow4','arrow1','triRight','diag4'],['pair2','pair1','pair3','pair4','sq2','ring3'],['diag2','diag3','diag1','diag4','arrow3','line3'],['ring1','ring2','ring3','ring4','circle1','diamond3'],['bar2','bar3','bar1','dot3','line1','circle1']
  ];
  return pools[matrixStep][n-1];
 }
@@ -93,7 +92,7 @@ function applyBookCipher(){
  const seq=(state.matrixAnswers&&state.matrixAnswers.length===10?state.matrixAnswers.join(''):C.matrixCode).match(/../g)||[];
  return seq.map(pair=>{const line=+pair[0]-1,word=+pair[1]-1;return (C.bookLines[line]&&C.bookLines[line][word])||'—'}).join(' ');
 }
-function finalPuzzle(){const lines=C.bookLines.map(words=>'<div class="book-line"><span>'+words.join(' ')+'</span></div>').join('');return `<div class="door-217"><div class="door-card"></div><div class="book-217"><small>UMBRAL // 217</small><h3>Libro de ausencias</h3><div class="book-lines">${lines}</div><p>El código de matrices no es una respuesta. Es la forma de leer estas líneas.</p><div class="file-tools"><button type="button" id="applyBook" class="secondary">Aplicar coordenadas</button></div><div id="bookResult" class="hint-output">El libro permanece cerrado.</div></div></div><div class="photo-grid"><img class="dossier-photo" src="./assets/images/photo-map-route.png"><img class="dossier-photo" src="./assets/images/photo-overlook.png"></div><div class="route-machine"><small>CONDICIONES DEL PRÓXIMO RECUERDO</small><h3>No elijas un nombre. Elige cómo debe sentirse.</h3><div class="route-dials"><div id="dialMood" class="route-dial">ATMÓSFERA<br>—</div><div id="dialMotion" class="route-dial">PULSO<br>—</div><div id="dialPlace" class="route-dial">ENTORNO<br>—</div></div><div class="route-options"><button type="button" data-kind="mood" data-value="FRÍO" class="secondary">Frío</button><button type="button" data-kind="mood" data-value="CALMA" class="secondary">Calma</button><button type="button" data-kind="motion" data-value="MOVIMIENTO" class="secondary">Movimiento</button><button type="button" data-kind="motion" data-value="AVENTURA" class="secondary">Aventura</button><button type="button" data-kind="place" data-value="NATURALEZA" class="secondary">Naturaleza</button><button type="button" data-kind="place" data-value="ALTURA" class="secondary">Altura</button></div><div id="routeResult" class="route-result">El próximo recuerdo necesita tres condiciones.</div></div>`}
+function finalPuzzle(){const lines=C.bookLines.map(words=>'<div class="book-line"><span>'+words.join(' ')+'</span></div>').join('');return `<div class="door-217"><div class="door-card"></div><div class="book-217"><small>UMBRAL // 217</small><h3>Libro de ausencias</h3><div class="book-lines">${lines}</div><p>El código de matrices no es una respuesta. Es la forma de leer estas líneas.</p><div class="file-tools"><button type="button" id="applyBook" class="secondary">Aplicar coordenadas</button></div><div id="bookResult" class="hint-output">El libro permanece cerrado.</div></div></div><div class="photo-grid"><img class="dossier-photo" src="./assets/images/photo-map-route.png"><img class="dossier-photo" src="./assets/images/photo-overlook.png"></div><div class="route-machine"><small>CONDICIONES DEL PRÓXIMO RECUERDO</small><h3>No elijas un nombre. Elige cómo debe sentirse.</h3><div class="route-dials"><div id="dialMood" class="route-dial">ATMÓSFERA<br>—</div><div id="dialMotion" class="route-dial">PULSO<br>—</div><div id="dialPlace" class="route-dial">ENTORNO<br>—</div></div><div class="route-options"><button type="button" data-kind="mood" data-value="VIENTO" class="secondary">Viento</button><button type="button" data-kind="mood" data-value="CALMA" class="secondary">Calma</button><button type="button" data-kind="motion" data-value="MOVIMIENTO" class="secondary">Movimiento</button><button type="button" data-kind="motion" data-value="AVENTURA" class="secondary">Aventura</button><button type="button" data-kind="place" data-value="NATURALEZA" class="secondary">Naturaleza</button><button type="button" data-kind="place" data-value="ALTURA" class="secondary">Altura</button></div><div id="routeResult" class="route-result">El próximo recuerdo necesita tres condiciones.</div></div>`}
 
 function openLevel(id){
  activeLevel=C.levels.find(l=>l.id===id);$('levelCode').textContent='REGISTRO 0'+activeLevel.number;$('levelTitle').textContent=activeLevel.title;$('levelSubtitle').textContent=activeLevel.subtitle;$('answerInput').value=state.answers[id]||'';$('answerFeedback').textContent='';$('hintInput').value='';$('hintOutput').textContent='';
